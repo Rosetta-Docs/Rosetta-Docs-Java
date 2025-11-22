@@ -4,6 +4,7 @@ import com.asledgehammer.rosetta.NamedEntity;
 import com.asledgehammer.rosetta.Notable;
 import com.asledgehammer.rosetta.RosettaObject;
 import com.asledgehammer.rosetta.Taggable;
+import com.asledgehammer.rosetta.exception.ClassAlreadyDiscoveredException;
 import com.asledgehammer.rosetta.exception.MissingKeyException;
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
@@ -17,6 +18,7 @@ import java.util.*;
 public class JavaClass extends RosettaObject
     implements NamedEntity, Notable, Reflected<Class<?>>, Taggable {
 
+  private final Map<String, JavaClass> classes = new HashMap<>();
   private final Map<String, JavaField> fields = new HashMap<>();
   private final Map<String, JavaExecutableCollection<JavaMethod>> methods = new HashMap<>();
   private final List<JavaTypeParameter> typeParameters = new ArrayList<>();
@@ -30,12 +32,14 @@ public class JavaClass extends RosettaObject
 
   private String deprecated;
 
-  private TypeReference extendz;
+  @Nullable private TypeReference extendz;
   private List<TypeReference> implementz = new ArrayList<>();
 
   private JavaScope scope;
   private boolean isStatic;
   private boolean isFinal;
+
+  private boolean isDiscovered = false;
 
   JavaClass(@NotNull JavaPackage pkg, @NotNull Class<?> clazz) {
     super();
@@ -43,8 +47,6 @@ public class JavaClass extends RosettaObject
     this.pkg = pkg;
     this.name = clazz.getSimpleName();
     this.constructors = new JavaExecutableCollection<>(this.name);
-
-    discover(clazz);
   }
 
   JavaClass(@NotNull JavaPackage pkg, @NotNull String name, @NotNull Map<String, Object> raw) {
@@ -65,20 +67,41 @@ public class JavaClass extends RosettaObject
     onLoad(raw);
   }
 
-  private void discover(Class<?> clazz) {
+  void discover(
+      @NotNull Class<?> clazz, @NotNull JavaLanguage language, @NotNull ExposureSettings settings) {
+
+    if (isDiscovered()) {
+      throw new ClassAlreadyDiscoveredException(this);
+    }
+
+    // Sanity-check.
+    Class<?> target = getReflectionTarget();
+    if (target != null && target != clazz) {
+      throw new IllegalArgumentException(
+          "The provided class doesn't match the reflection-target: (target: "
+              + target.getName()
+              + ", given: "
+              + clazz.getName()
+              + ")");
+    }
 
     this.target = clazz;
     this.targetReference = ClassReference.of(clazz);
 
-    int modifiers = clazz.getModifiers();
+    final int modifiers = clazz.getModifiers();
 
     // Figure out the modifiers for the class.
-    this.scope = JavaLanguage.getScope(clazz);
-    this.isStatic = JavaLanguage.isStatic(clazz);
-    this.isFinal = JavaLanguage.isFinal(clazz);
+    this.scope = JavaLanguage.getScope(modifiers);
+    this.isStatic = JavaLanguage.isStatic(modifiers);
+    this.isFinal = JavaLanguage.isFinal(modifiers);
 
     // Grab the superclass type.
-    this.extendz = TypeReference.of(clazz.getGenericSuperclass());
+    final Type clazzSuperGeneric = clazz.getGenericSuperclass();
+    if (clazzSuperGeneric != null) {
+      this.extendz = TypeReference.of(clazz.getGenericSuperclass());
+//    } else {
+//      System.out.println("Discovered class doesn't have a generic super-class: " + clazz.getName());
+    }
 
     // Grab any superinterface types.
     for (Type implement : clazz.getGenericInterfaces()) {
@@ -86,26 +109,56 @@ public class JavaClass extends RosettaObject
     }
 
     // Discover fields.
+    if (settings.exposeFields()) {
+      discoverFields(clazz);
+    }
+
+    // Discover constructors.
+    if (settings.exposeConstructors()) {
+      discoverConstructor(clazz);
+    }
+
+    // Discover methods.
+    if (settings.exposeMethods()) {
+      discoverMethods(clazz);
+    }
+
+    // If the exposure-policy of the settings passed are to expose any related classes.
+    if (settings.getSuperPolicy() == ExposureSettings.SuperPolicy.EXPOSE) {
+      // Ignore Object.class super-class being self-referencing.
+      Class<?> clazzSuper = clazz.getSuperclass();
+      if (clazzSuper != null && clazz.getSuperclass() != clazz) {
+        language.of(clazzSuper, settings);
+      }
+      for (Class<?> interfaze : clazz.getInterfaces()) {
+        language.of(interfaze, settings);
+      }
+    }
+
+    // Lock discovery to prevent post-discovery mutations.
+    this.isDiscovered = true;
+  }
+
+  private void discoverFields(@NotNull Class<?> clazz) {
     for (Field field : clazz.getDeclaredFields()) {
       JavaField javaField = new JavaField(field);
       fields.put(javaField.getName(), javaField);
     }
+  }
 
-    // Discover constructors.
+  private void discoverConstructor(@NotNull Class<?> clazz) {
     for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
       JavaConstructor javaConstructor = new JavaConstructor(constructor);
       constructors.addExecutable(javaConstructor);
     }
+  }
 
-    // Discover methods.
+  private void discoverMethods(@NotNull Class<?> clazz) {
     for (Method method : clazz.getDeclaredMethods()) {
       String name = method.getName();
       JavaMethod javaMethod = new JavaMethod(method);
-      JavaExecutableCollection<JavaMethod> collection = methods.get(name);
-      if (collection == null) {
-        collection = new JavaExecutableCollection<>(name);
-        methods.put(name, collection);
-      }
+      JavaExecutableCollection<JavaMethod> collection =
+          methods.computeIfAbsent(name, JavaExecutableCollection::new);
       collection.addExecutable(javaMethod);
     }
   }
@@ -233,6 +286,22 @@ public class JavaClass extends RosettaObject
       }
     }
 
+    // Load any sub-classes. (If defined)
+    if (raw.containsKey("classes")) {
+      Object oClasses = raw.get("classes");
+      if (!(oClasses instanceof Map)) {
+        throw new ValueTypeException("class", "classes", oClasses.getClass(), Map.class);
+      }
+      Map<String, Object> classes = (Map<String, Object>) oClasses;
+      for (String key : classes.keySet()) {
+        Object oClass = classes.get(key);
+        if (!(oClass instanceof Map)) {
+          throw new ValueTypeException("class.classes", key, oClass.getClass(), Map.class);
+        }
+        this.classes.put(key, new JavaClass(this.pkg, key, (Map<String, Object>) oClass));
+      }
+    }
+
     // Load any fields. (If defined)
     if (raw.containsKey("fields")) {
       Object oFields = raw.get("fields");
@@ -354,6 +423,18 @@ public class JavaClass extends RosettaObject
       raw.put("tags", getTags());
     }
 
+    // If the class has classes, save them.
+    if (hasClasses()) {
+      final Map<String, Object> classes = new HashMap<>();
+      final List<String> keys = new ArrayList<>(this.classes.keySet());
+      keys.sort(Comparator.naturalOrder());
+      for (String key : keys) {
+        JavaClass javaClass = this.classes.get(key);
+        classes.put(key, javaClass.onSave());
+      }
+      raw.put("classes", classes);
+    }
+
     // If the class has fields, save them.
     if (hasFields()) {
       final Map<String, Object> fields = new HashMap<>();
@@ -414,6 +495,42 @@ public class JavaClass extends RosettaObject
     return name;
   }
 
+  public boolean hasClasses() {
+    return !this.classes.isEmpty();
+  }
+
+  @NotNull
+  public Map<String, JavaClass> getClasses() {
+    return this.classes;
+  }
+
+  public void addClass(@NotNull JavaClass javaClass) {
+    String key = javaClass.getName();
+    if (this.classes.containsKey(key)) {
+      throw new IllegalArgumentException(
+          "A class definition is already registered for the name: " + key);
+    }
+    this.classes.put(javaClass.getName(), javaClass);
+  }
+
+  public void removeClass(@NotNull JavaClass javaClass) {
+    String key = javaClass.getName();
+    if (!this.classes.containsKey(key)) {
+      throw new IllegalArgumentException(
+          "A class definition is NOT registered with the name: " + key);
+    }
+    this.classes.remove(javaClass.getName());
+  }
+
+  @NotNull
+  public JavaClass removeClass(@NotNull String clazzName) {
+    if (!this.classes.containsKey(clazzName)) {
+      throw new IllegalArgumentException(
+          "A class definition is NOT registered with the name: " + clazzName);
+    }
+    return this.classes.remove(clazzName);
+  }
+
   @NotNull
   public List<JavaTypeParameter> getTypeParameters() {
     if (isDirty()) compile();
@@ -457,7 +574,7 @@ public class JavaClass extends RosettaObject
     return methods.getExecutable(method);
   }
 
-  @NotNull
+  @Nullable
   @Override
   public Class<?> getReflectionTarget() {
     return this.target;
@@ -552,6 +669,10 @@ public class JavaClass extends RosettaObject
     List<String> tagsRemoved = Collections.unmodifiableList(tags);
     tags.clear();
     return tagsRemoved;
+  }
+
+  boolean isDiscovered() {
+    return isDiscovered;
   }
 
   @Nullable

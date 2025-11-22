@@ -72,7 +72,7 @@ public class JavaPackage extends RosettaObject
   JavaPackage(@NotNull JavaLanguage lang, @Nullable JavaPackage parent, @NotNull String name) {
     super();
 
-    System.out.println("new JavaPackage(name = " + name + ")");
+//    System.out.println("new JavaPackage(name = " + name + ")");
 
     this.language = lang;
     this.parent = parent;

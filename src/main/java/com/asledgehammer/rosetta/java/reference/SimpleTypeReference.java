@@ -74,7 +74,7 @@ public class SimpleTypeReference extends TypeReference {
 
   @NotNull
   public String compile(@NotNull ClassReference reference, @NotNull Class<?> deCl) {
-    String compiled = reference.resolveType(this, deCl).compile();
+    String compiled = this.base;
     if (subTypes != null) {
       StringBuilder subTypeStr = new StringBuilder();
       for (TypeReference subType : subTypes) {

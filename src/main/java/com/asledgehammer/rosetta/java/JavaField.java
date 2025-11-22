@@ -21,7 +21,15 @@ public class JavaField extends RosettaObject
 
   @Nullable private String notes;
   @Nullable private String deprecated;
-  private boolean nullable;
+
+  private boolean isNullable;
+  private boolean isVolatile;
+  private boolean isTransient;
+  private boolean isStatic;
+  private boolean isFinal;
+  private boolean isNative;
+
+  private JavaScope scope;
 
   private TypeReference type;
 
@@ -33,7 +41,15 @@ public class JavaField extends RosettaObject
     this.name = field.getName();
     this.reflectedObject = field;
     this.type = TypeReference.of(field.getGenericType());
-    this.nullable = !this.type.isPrimitive();
+
+    int modifiers = field.getModifiers();
+    this.scope = JavaLanguage.getScope(modifiers);
+    this.isNullable = !this.type.isPrimitive();
+    this.isVolatile = JavaLanguage.isVolatile(modifiers);
+    this.isTransient = JavaLanguage.isTransient(modifiers);
+    this.isStatic = JavaLanguage.isStatic(modifiers);
+    this.isFinal = JavaLanguage.isFinal(modifiers);
+    this.isNative = JavaLanguage.isNative(modifiers);
   }
 
   JavaField(@NotNull String name, @NotNull Map<String, Object> raw) {
@@ -52,22 +68,106 @@ public class JavaField extends RosettaObject
     }
     this.type = JavaLanguage.resolveType(raw.get("type"));
 
+    // Process the scope enum.
+    if (!raw.containsKey("scope")) {
+      throw new MissingKeyException("fields[\"" + name + "\"]", "scope");
+    }
+    Object oScope = raw.get("scope");
+    if (!(oScope instanceof String)) {
+      throw new ValueTypeException(
+          "fields[\"" + name + "\"]", "scope", oScope.getClass(), String.class);
+    }
+
+    this.scope = JavaScope.of((String) oScope);
+
+    Object oFlag;
+
     // If defined, set the nullable flag.
     if (raw.containsKey("nullable")) {
-      Object oNullable = raw.get("nullable");
-      if (!(oNullable instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "nullable", oNullable.getClass(), Boolean.class);
+      oFlag = raw.get("nullable");
+      if (!(oFlag instanceof Boolean)) {
+        throw new ValueTypeException("parameter", "nullable", oFlag.getClass(), Boolean.class);
       }
-      this.nullable = (boolean) (Boolean) oNullable;
+      this.isNullable = (boolean) (Boolean) oFlag;
     } else {
-      this.nullable = !type.isPrimitive();
+      this.isNullable = !type.isPrimitive();
+    }
+
+    // If defined, set the volatile flag.
+    if (raw.containsKey("volatile")) {
+      oFlag = raw.get("volatile");
+      if (!(oFlag instanceof Boolean)) {
+        throw new ValueTypeException("parameter", "volatile", oFlag.getClass(), Boolean.class);
+      }
+      this.isVolatile = (boolean) (Boolean) oFlag;
+    } else {
+      this.isVolatile = false;
+    }
+
+    // If defined, set the transient flag.
+    if (raw.containsKey("transient")) {
+      oFlag = raw.get("transient");
+      if (!(oFlag instanceof Boolean)) {
+        throw new ValueTypeException(
+            "parameter", "transient", oFlag.getClass(), Boolean.class);
+      }
+      this.isTransient = (boolean) (Boolean) oFlag;
+    } else {
+      this.isTransient = false;
+    }
+
+    // If defined, set the static flag.
+    if (raw.containsKey("static")) {
+      oFlag = raw.get("static");
+      if (!(oFlag instanceof Boolean)) {
+        throw new ValueTypeException(
+                "parameter", "static", oFlag.getClass(), Boolean.class);
+      }
+      this.isStatic = (boolean) (Boolean) oFlag;
+    } else {
+      this.isStatic = false;
+    }
+
+    // If defined, set the native flag.
+    if (raw.containsKey("native")) {
+      oFlag = raw.get("native");
+      if (!(oFlag instanceof Boolean)) {
+        throw new ValueTypeException(
+                "parameter", "native", oFlag.getClass(), Boolean.class);
+      }
+      this.isNative = (boolean) (Boolean) oFlag;
+    } else {
+      this.isNative = false;
+    }
+
+    // If defined, set the final flag.
+    if (raw.containsKey("final")) {
+      oFlag = raw.get("final");
+      if (!(oFlag instanceof Boolean)) {
+        throw new ValueTypeException(
+                "parameter", "final", oFlag.getClass(), Boolean.class);
+      }
+      this.isFinal = (boolean) (Boolean) oFlag;
+    } else {
+      this.isFinal = false;
     }
   }
 
   @NotNull
   protected Map<String, Object> onSave(@NotNull ClassReference reference) {
-    // TODO: Implement.
     final Map<String, Object> raw = new HashMap<>();
+
+    Class<?> deCl = reflectedObject.getDeclaringClass();
+    raw.put("type", JavaLanguage.serializeType(type, reference, deCl));
+    raw.put("scope", this.scope.getID());
+
+    if (isNullable()) raw.put("nullable", true);
+    if (isVolatile()) raw.put("volatile", true);
+    if (isTransient()) raw.put("transient", true);
+    if (isNative()) raw.put("native", true);
+    if (isFinal()) raw.put("final", true);
+    if (isStatic()) raw.put("static", true);
+
     return raw;
   }
 
@@ -102,7 +202,7 @@ public class JavaField extends RosettaObject
   @Override
   @NotNull
   public String getNotes() {
-    if (!hasNotes()) {
+    if (notes == null || this.notes.isEmpty()) {
       throw new NullPointerException("The object has no notes.");
     }
     return this.notes;
@@ -248,5 +348,65 @@ public class JavaField extends RosettaObject
       throw new RuntimeException("No tags are registered.");
     }
     tags.clear();
+  }
+
+  public boolean isFinal() {
+    return isFinal;
+  }
+
+  public void setFinal(boolean flag) {
+    if (flag == isFinal) return;
+    isFinal = flag;
+    setDirty();
+  }
+
+  public boolean isNative() {
+    return isNative;
+  }
+
+  public void setNative(boolean flag) {
+    if (flag == isNative) return;
+    isNative = flag;
+    setDirty();
+  }
+
+  public boolean isStatic() {
+    return isStatic;
+  }
+
+  public void setStatic(boolean flag) {
+    if (flag == isStatic) return;
+    isStatic = flag;
+    setDirty();
+  }
+
+  public boolean isTransient() {
+    return isTransient;
+  }
+
+  public void setTransient(boolean flag) {
+    if (flag == isTransient) return;
+    isTransient = flag;
+    setDirty();
+  }
+
+  public boolean isVolatile() {
+    return isVolatile;
+  }
+
+  public void setVolatile(boolean flag) {
+    if (flag == isVolatile) return;
+    isVolatile = flag;
+    setDirty();
+  }
+
+  public boolean isNullable() {
+    return isNullable;
+  }
+
+  public void setNullable(boolean flag) {
+    if (flag == isNullable) return;
+    this.isNullable = flag;
+    setDirty();
   }
 }

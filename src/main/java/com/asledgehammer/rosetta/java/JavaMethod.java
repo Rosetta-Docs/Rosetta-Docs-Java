@@ -9,6 +9,9 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Method;
 import java.util.*;
 
+/**
+ *
+ */
 public class JavaMethod extends JavaExecutable<Method> implements Taggable {
 
   @Nullable private JavaReturn returns;
@@ -72,7 +75,7 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
     }
 
     // Handle compiling the return property.
-    if (returns.isDirty()) {
+    if (returns != null && returns.isDirty()) {
       return returns.compile();
     }
 

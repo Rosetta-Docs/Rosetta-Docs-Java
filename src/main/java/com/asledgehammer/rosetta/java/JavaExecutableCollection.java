@@ -63,6 +63,7 @@ public class JavaExecutableCollection<E extends JavaExecutable>
               + " is already registered in the list: "
               + executable.getSignature());
     }
+    executables.add(executable);
     this.setDirty();
   }
 

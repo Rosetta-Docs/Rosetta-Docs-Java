@@ -14,8 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static java.lang.Package.getPackages;
-
 public class JavaLanguage implements RosettaLanguage {
 
   final Map<String, JavaClass> classes = new HashMap<>();
@@ -139,7 +137,7 @@ public class JavaLanguage implements RosettaLanguage {
    * @return The scope of the Java reflection target.
    */
   @NotNull
-  private static JavaScope getScope(int modifiers) {
+  static JavaScope getScope(int modifiers) {
     if (Modifier.isPublic(modifiers)) {
       return JavaScope.PUBLIC;
     } else if (Modifier.isProtected(modifiers)) {
@@ -163,6 +161,10 @@ public class JavaLanguage implements RosettaLanguage {
     return Modifier.isStatic(field.getModifiers());
   }
 
+  public static boolean isStatic(int modifiers) {
+    return Modifier.isStatic(modifiers);
+  }
+
   public static boolean isFinal(@NotNull Method method) {
     return Modifier.isFinal(method.getModifiers());
   }
@@ -179,16 +181,32 @@ public class JavaLanguage implements RosettaLanguage {
     return Modifier.isFinal(field.getModifiers());
   }
 
+  public static boolean isFinal(int modifiers) {
+    return Modifier.isFinal(modifiers);
+  }
+
   public static boolean isTransient(@NotNull Field field) {
     return Modifier.isTransient(field.getModifiers());
+  }
+
+  public static boolean isTransient(int modifiers) {
+    return Modifier.isTransient(modifiers);
   }
 
   public static boolean isVolatile(@NotNull Field field) {
     return Modifier.isVolatile(field.getModifiers());
   }
 
+  public static boolean isVolatile(int modifiers) {
+    return Modifier.isVolatile(modifiers);
+  }
+
   public static boolean isNative(@NotNull Method method) {
     return Modifier.isNative(method.getModifiers());
+  }
+
+  public static boolean isNative(int modifiers) {
+    return Modifier.isNative(modifiers);
   }
 
   @NotNull
@@ -242,7 +260,6 @@ public class JavaLanguage implements RosettaLanguage {
     if (path.contains(".")) {
       String[] split = path.split("\\.");
       name = split[split.length - 1];
-      // TODO: Join
 
       if (split.length == 2) {
         Package pkgParent = JavaPackage.resolve(split[0]);
@@ -273,7 +290,8 @@ public class JavaLanguage implements RosettaLanguage {
   }
 
   @NotNull
-  public JavaClass of(@NotNull Class<?> clazz) {
+  public JavaClass of(@NotNull Class<?> clazz, @NotNull ExposureSettings settings) {
+
     String qualifiedPath = clazz.getName();
     if (classes.containsKey(qualifiedPath)) {
       return classes.get(qualifiedPath);
@@ -282,16 +300,28 @@ public class JavaLanguage implements RosettaLanguage {
     // Create & cache the class definition.
     JavaPackage javaPackage = of(clazz.getPackage());
     JavaClass javaClass = new JavaClass(javaPackage, clazz);
-    javaPackage.addClass(javaClass);
+
     classes.put(qualifiedPath, javaClass);
+
+    // IMPORTANT: Discover post-constructor to prevent null-referencing if self-referencing on
+    // discovery.
+    javaClass.discover(clazz, this, settings);
+
+    // If the class is enclosed, reference the class in there instead of the package to properly
+    // reflect its path.
+    Class<?> clazzEnclosing = clazz.getEnclosingClass();
+    if (clazzEnclosing != null) {
+      of(clazzEnclosing, settings).addClass(javaClass);
+    } else {
+      javaPackage.addClass(javaClass);
+    }
+
     return javaClass;
   }
 
   @NotNull
-  public JavaMethod of(@NotNull Method method) {
-    Class<?> classDef = method.getDeclaringClass();
-    JavaClass javaClass = of(classDef);
-    return javaClass.getMethod(method);
+  public JavaMethod of(@NotNull Method method, @NotNull ExposureSettings settings) {
+    return of(method.getDeclaringClass(), settings).getMethod(method);
   }
 
   @Override

@@ -144,9 +144,9 @@ public class ClassReference {
     // Here we resolve the hierarchy as a stack to traverse backwards.
     List<ClassReference> stackRef = new ArrayList<>(chain);
 
-    ClassReference sup = stackRef.remove(stackRef.size() - 1);
+    ClassReference sup = stackRef.removeLast();
     while (!stackRef.isEmpty()) {
-      ClassReference refNext = stackRef.remove(stackRef.size() - 1);
+      ClassReference refNext = stackRef.removeLast();
       if (refNext.assignedSuperVariables.containsKey(sup.clazz)) {
         Map<String, TypeReference> vars = refNext.assignedSuperVariables.get(sup.clazz);
         if (vars.containsKey(rawType)) {

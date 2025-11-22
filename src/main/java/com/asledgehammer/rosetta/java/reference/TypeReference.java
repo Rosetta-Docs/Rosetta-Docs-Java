@@ -93,7 +93,7 @@ public abstract class TypeReference {
     if (!rawType.contains("&")) {
       TypeReference reference = new SimpleTypeReference(rawType);
       if (reference.isGeneric()) {
-        reference = new UnionTypeReference(reference.getBase(), true, OBJECT_TYPE_MAP);
+        reference = new UnionTypeReference(rawType, true, OBJECT_TYPE_MAP);
       }
       return reference;
     }
