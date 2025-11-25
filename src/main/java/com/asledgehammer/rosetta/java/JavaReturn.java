@@ -59,7 +59,17 @@ public class JavaReturn extends RosettaObject implements Notable {
   @NotNull
   protected Map<String, Object> onSave(@NotNull ClassReference reference, @NotNull Class<?> deCl) {
     final Map<String, Object> raw = new HashMap<>();
-    // TODO: Implement.
+
+    if (hasNotes()) {
+      raw.put("notes", getNotes());
+    }
+
+    if (isNullable()) {
+      raw.put("nullable", true);
+    }
+
+    raw.put("type", JavaLanguage.serializeType(getType(), reference, deCl));
+
     return raw;
   }
 
@@ -99,6 +109,14 @@ public class JavaReturn extends RosettaObject implements Notable {
     this.notes = notes;
 
     setDirty();
+  }
+
+  public boolean isNullable() {
+    return nullable;
+  }
+
+  public void setNullable(boolean nullable) {
+    this.nullable = nullable;
   }
 
   /**

@@ -131,6 +131,10 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
       raw.put("notes", getNotes());
     }
 
+    if (isDeprecated()) {
+      raw.put("deprecated", true);
+    }
+
     if (hasTypeParameters()) {
       final List<Map<String, Object>> typeParameters = new ArrayList<>();
       for (JavaTypeParameter parameter : this.typeParameters) {

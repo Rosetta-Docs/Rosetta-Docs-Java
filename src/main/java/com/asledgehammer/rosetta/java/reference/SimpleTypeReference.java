@@ -21,7 +21,19 @@ public class SimpleTypeReference extends TypeReference {
   private final TypeReference[] bounds;
 
   SimpleTypeReference(String raw) {
-    if (raw.contains("<")) {
+    System.out.println("new SimpleTypeReference(raw=\"" + raw + "\")");
+
+    raw = raw.trim();
+    final int firstIndexOfExtends = raw.indexOf(" extends ");
+    final int firstIndexOfSuper = raw.indexOf(" super ");
+    final int firstIndexOfSubTypes = raw.indexOf("<");
+
+    // Check if the subtypes are defined for the main type provided, not a subtype that follows
+    // 'extends' or
+    // 'super of' rules.
+    if (firstIndexOfSubTypes != -1
+        && firstIndexOfSubTypes < firstIndexOfExtends
+        && firstIndexOfSubTypes < firstIndexOfSuper) {
       this.base = raw.substring(0, raw.indexOf('<'));
       List<String> subTypesStr = getGenericTypes(raw);
       subTypes = new ArrayList<>();
@@ -30,9 +42,16 @@ public class SimpleTypeReference extends TypeReference {
       }
     } else {
       String base = raw.trim();
-      if (base.contains(" extends ")) {
+
+      if (firstIndexOfExtends != -1 && firstIndexOfSuper != 1) {
+        if (firstIndexOfExtends < firstIndexOfSuper) {
+          this.base = base.split(" extends ")[0];
+        } else {
+          this.base = base.split(" super ")[0];
+        }
+      } else if (firstIndexOfExtends != -1) {
         this.base = base.split(" extends ")[0];
-      } else if (base.contains(" super ")) {
+      } else if (firstIndexOfSuper != -1) {
         this.base = base.split(" super ")[0];
       } else {
         this.base = base;
@@ -164,4 +183,5 @@ public class SimpleTypeReference extends TypeReference {
 
     return vars;
   }
+
 }

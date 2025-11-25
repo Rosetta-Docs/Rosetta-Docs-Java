@@ -34,7 +34,7 @@ public class JavaParameter extends RosettaObject
 
   public JavaParameter(@NotNull Parameter parameter) {
     super();
-//    System.out.println("new JavaParameter(parameter = " + parameter + ")");
+    //    System.out.println("new JavaParameter(parameter = " + parameter + ")");
     this.target = parameter;
     this.name = parameter.getName();
     this.type = TypeReference.of(parameter.getParameterizedType());
@@ -44,7 +44,7 @@ public class JavaParameter extends RosettaObject
 
   public JavaParameter(@NotNull Map<String, Object> raw) {
     super(raw);
-//    System.out.println("new JavaParameter(parameter = " + raw + ")");
+    //    System.out.println("new JavaParameter(parameter = " + raw + ")");
     this.target = null;
   }
 
@@ -93,7 +93,7 @@ public class JavaParameter extends RosettaObject
       raw.put("notes", getNotes());
     }
     raw.put("nullable", isNullable());
-    raw.put("type", this.type.compile(reference, deCl));
+    raw.put("type", JavaLanguage.serializeType(this.type, reference, deCl));
     return raw;
   }
 

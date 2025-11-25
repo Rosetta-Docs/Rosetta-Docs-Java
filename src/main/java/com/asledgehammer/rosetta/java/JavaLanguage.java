@@ -77,21 +77,20 @@ public class JavaLanguage implements RosettaLanguage {
       @NotNull TypeReference type, @NotNull ClassReference reference, @NotNull Class<?> deCl) {
     Map<String, Object> raw;
     if (type instanceof SimpleTypeReference simple) {
-      if (!simple.hasSubTypes()) {
-        return simple.compile(reference, deCl);
-      }
       raw = new HashMap<>();
-      raw.put("full", simple.compile());
+      raw.put("full", simple.compile(reference, deCl));
       raw.put("base", simple.getBase());
-      List<Object> parameters = new ArrayList<>();
-      for (TypeReference subType : simple.getSubTypes()) {
-        parameters.add(serializeType(subType, reference, deCl));
+      if (simple.hasSubTypes()) {
+        List<Object> parameters = new ArrayList<>();
+        for (TypeReference subType : simple.getSubTypes()) {
+          parameters.add(serializeType(subType, reference, deCl));
+        }
+        raw.put("parameters", parameters);
       }
-      raw.put("parameters", parameters);
     } else {
       UnionTypeReference union = (UnionTypeReference) type;
       raw = new HashMap<>();
-      raw.put("full", union.compile());
+      raw.put("full", union.compile(reference, deCl));
       raw.put("base", union.getBase());
       raw.put("generic", union.isGeneric());
       raw.put("bounds_type", union.isExtendsOrSuper() ? "extends" : "super");

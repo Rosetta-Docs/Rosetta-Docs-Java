@@ -2,6 +2,7 @@ package com.asledgehammer.rosetta.java.reference;
 
 import java.util.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("unused")
 public class UnionTypeReference extends TypeReference implements BoundReference {
@@ -34,7 +35,17 @@ public class UnionTypeReference extends TypeReference implements BoundReference 
   }
 
   UnionTypeReference(
-      @NotNull String base, boolean extendsOrSuper, @NotNull TypeReference[] bounds) {
+      @NotNull String base, boolean extendsOrSuper, @Nullable TypeReference[] bounds) {
+
+    //    System.out.println(
+    //        "new UnionTypeReference(base = \""
+    //            + base
+    //            + "\", extendsOrSuper="
+    //            + extendsOrSuper
+    //            + ", bounds = "
+    //            + Arrays.toString(bounds)
+    //            + ")");
+
     base = base.trim();
     this.wildcard = base.startsWith("?");
     if (this.wildcard) {
@@ -79,7 +90,7 @@ public class UnionTypeReference extends TypeReference implements BoundReference 
         this.bounds = bounds;
       } else {
         // Normal wildcard that allows any type of object.
-        this.bounds = OBJECT_TYPE_MAP;
+        this.bounds = null;
       }
     } else {
       this.base = base.trim();
@@ -109,10 +120,12 @@ public class UnionTypeReference extends TypeReference implements BoundReference 
     } else {
       builder.append(" super ");
     }
-    for (int i = 0; i < this.bounds.length; i++) {
-      TypeReference reference = this.bounds[i];
-      if (i != 0) builder.append(" & ");
-      builder.append(reference.compile());
+    if (this.bounds != null) {
+      for (int i = 0; i < this.bounds.length; i++) {
+        TypeReference reference = this.bounds[i];
+        if (i != 0) builder.append(" & ");
+        builder.append(reference.compile());
+      }
     }
     return builder.toString();
   }
@@ -126,10 +139,12 @@ public class UnionTypeReference extends TypeReference implements BoundReference 
     } else {
       builder.append(" super ");
     }
-    for (int i = 0; i < this.bounds.length; i++) {
-      TypeReference reference = this.bounds[i];
-      if (i != 0) builder.append(" & ");
-      builder.append(reference.compile(clazzReference, deCl));
+    if (this.bounds != null) {
+      for (int i = 0; i < this.bounds.length; i++) {
+        TypeReference reference = this.bounds[i];
+        if (i != 0) builder.append(" & ");
+        builder.append(reference.compile(clazzReference, deCl));
+      }
     }
     return builder.toString();
   }

@@ -54,6 +54,8 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
     // Save the general executable definitions info first.
     Map<String, Object> raw = super.onSave(reference);
 
+    raw.put("name", getName());
+
     // Save the returns definition if qualified.
     if (returns != null && returns.shouldSave()) {
       raw.put("return", returns.onSave(reference, getReflectionTarget().getDeclaringClass()));
