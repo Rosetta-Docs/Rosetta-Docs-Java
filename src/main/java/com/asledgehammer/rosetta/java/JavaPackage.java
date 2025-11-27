@@ -72,8 +72,6 @@ public class JavaPackage extends RosettaObject
   JavaPackage(@NotNull JavaLanguage lang, @Nullable JavaPackage parent, @NotNull String name) {
     super();
 
-//    System.out.println("new JavaPackage(name = " + name + ")");
-
     this.language = lang;
     this.parent = parent;
     this.name = name;
@@ -141,7 +139,6 @@ public class JavaPackage extends RosettaObject
     return true;
   }
 
-  @Override
   protected void onLoad(@NotNull Map<String, Object> raw) {
     // TODO: Load classes.
     // TODO: Load sub-packages.

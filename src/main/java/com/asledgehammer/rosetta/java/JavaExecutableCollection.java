@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class JavaExecutableCollection<E extends JavaExecutable>
+public class JavaExecutableCollection<E extends JavaExecutable<?>>
     implements DirtySupported, NamedEntity {
 
   private final List<E> executables = new ArrayList<>();

@@ -99,8 +99,6 @@ public class JavaClass extends RosettaObject
     final Type clazzSuperGeneric = clazz.getGenericSuperclass();
     if (clazzSuperGeneric != null) {
       this.extendz = TypeReference.of(clazz.getGenericSuperclass());
-//    } else {
-//      System.out.println("Discovered class doesn't have a generic super-class: " + clazz.getName());
     }
 
     // Grab any superinterface types.
@@ -207,7 +205,6 @@ public class JavaClass extends RosettaObject
     return true;
   }
 
-  @Override
   protected void onLoad(@NotNull final Map<String, Object> raw) {
 
     // If the class is defined as static.

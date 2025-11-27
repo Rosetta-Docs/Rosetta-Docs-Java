@@ -28,10 +28,10 @@ public class JavaReturn extends RosettaObject implements Notable {
   }
 
   public JavaReturn(@NotNull Map<String, Object> raw) {
-    super(raw);
+    super();
+    onLoad(raw);
   }
 
-  @Override
   protected void onLoad(@NotNull Map<String, Object> raw) {
     // Resolve the type.
     if (!raw.containsKey("type")) {

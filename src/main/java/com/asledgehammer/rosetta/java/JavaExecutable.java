@@ -85,10 +85,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     this.signature = createSignature(this);
   }
 
-  @Override
   protected void onLoad(@NotNull Map<String, Object> raw) {
-    // TODO: Implement.
-
     // Load parameters. (If present)
     if (raw.containsKey("parameters")) {
       Object oParameters = raw.get("parameters");

@@ -30,6 +30,7 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   protected void onLoad(@NotNull Map<String, Object> raw) {
 
     // Load all general executable data.

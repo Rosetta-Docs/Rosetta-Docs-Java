@@ -61,7 +61,6 @@ public class JavaField extends RosettaObject
     onLoad(raw);
   }
 
-  @Override
   protected void onLoad(@NotNull Map<String, Object> raw) {
     if (!raw.containsKey("type")) {
       throw new MissingKeyException(name, "type");
@@ -108,8 +107,7 @@ public class JavaField extends RosettaObject
     if (raw.containsKey("transient")) {
       oFlag = raw.get("transient");
       if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException(
-            "parameter", "transient", oFlag.getClass(), Boolean.class);
+        throw new ValueTypeException("parameter", "transient", oFlag.getClass(), Boolean.class);
       }
       this.isTransient = (boolean) (Boolean) oFlag;
     } else {
@@ -120,8 +118,7 @@ public class JavaField extends RosettaObject
     if (raw.containsKey("static")) {
       oFlag = raw.get("static");
       if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException(
-                "parameter", "static", oFlag.getClass(), Boolean.class);
+        throw new ValueTypeException("parameter", "static", oFlag.getClass(), Boolean.class);
       }
       this.isStatic = (boolean) (Boolean) oFlag;
     } else {
@@ -132,8 +129,7 @@ public class JavaField extends RosettaObject
     if (raw.containsKey("native")) {
       oFlag = raw.get("native");
       if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException(
-                "parameter", "native", oFlag.getClass(), Boolean.class);
+        throw new ValueTypeException("parameter", "native", oFlag.getClass(), Boolean.class);
       }
       this.isNative = (boolean) (Boolean) oFlag;
     } else {
@@ -144,8 +140,7 @@ public class JavaField extends RosettaObject
     if (raw.containsKey("final")) {
       oFlag = raw.get("final");
       if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException(
-                "parameter", "final", oFlag.getClass(), Boolean.class);
+        throw new ValueTypeException("parameter", "final", oFlag.getClass(), Boolean.class);
       }
       this.isFinal = (boolean) (Boolean) oFlag;
     } else {

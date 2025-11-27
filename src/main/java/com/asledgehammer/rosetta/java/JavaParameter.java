@@ -43,12 +43,10 @@ public class JavaParameter extends RosettaObject
   }
 
   public JavaParameter(@NotNull Map<String, Object> raw) {
-    super(raw);
-    //    System.out.println("new JavaParameter(parameter = " + raw + ")");
     this.target = null;
+    onLoad(raw);
   }
 
-  @Override
   protected void onLoad(@NotNull Map<String, Object> raw) {
 
     // Read the name.

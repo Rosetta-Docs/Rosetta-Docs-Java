@@ -27,6 +27,7 @@ public class JavaLanguage implements RosettaLanguage {
    * @param oType Either a String or a Map.
    * @return A built type-reference.
    */
+  @SuppressWarnings("unchecked")
   public static TypeReference resolveType(@NotNull Object oType) {
 
     if (oType instanceof String) {
@@ -54,7 +55,7 @@ public class JavaLanguage implements RosettaLanguage {
       }
 
       StringBuilder sub = new StringBuilder();
-      for (Object oParameter : (List) oParameters) {
+      for (Object oParameter : (List<?>) oParameters) {
         if (sub.isEmpty()) {
           sub.append(resolveType(oParameter).getBase());
         } else {
