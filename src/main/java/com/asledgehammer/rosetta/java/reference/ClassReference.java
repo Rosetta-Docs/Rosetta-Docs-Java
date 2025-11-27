@@ -277,7 +277,6 @@ public class ClassReference {
   }
 
   public static void main(String[] args) throws Exception {
-
     Class<?> deCl = Foo.class;
     Method mGet = deCl.getMethod("get", int.class);
     Method mDoThing = deCl.getMethod("doThing");
@@ -285,7 +284,5 @@ public class ClassReference {
     ClassReference reference = ClassReference.of(deCl);
     MethodReference mrGet = reference.getMethodReference(mGet);
     MethodReference mrDoThing = reference.getMethodReference(mDoThing);
-
-    System.out.println("Resolved return type: " + mrDoThing.getReturnReference().getResolvedType());
   }
 }

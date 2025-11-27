@@ -78,8 +78,18 @@ public class JavaLanguage implements RosettaLanguage {
     Map<String, Object> raw;
     if (type instanceof SimpleTypeReference simple) {
       raw = new HashMap<>();
+
+      // The most simple form of a type. Only serialize the base string.
+      if (!simple.hasSubTypes() && !simple.isGeneric()) {
+        return type.compile(reference, deCl);
+      }
+
       raw.put("full", simple.compile(reference, deCl));
       raw.put("base", simple.getBase());
+      if (type.isGeneric()) {
+        raw.put("generic", true);
+      }
+
       if (simple.hasSubTypes()) {
         List<Object> parameters = new ArrayList<>();
         for (TypeReference subType : simple.getSubTypes()) {
@@ -93,12 +103,15 @@ public class JavaLanguage implements RosettaLanguage {
       raw.put("full", union.compile(reference, deCl));
       raw.put("base", union.getBase());
       raw.put("generic", union.isGeneric());
-      raw.put("bounds_type", union.isExtendsOrSuper() ? "extends" : "super");
-      List<Object> bounds = new ArrayList<>();
-      for (TypeReference bound : union.getBounds()) {
-        bounds.add(serializeType(bound, reference, deCl));
+      TypeReference[] trBounds = union.getBounds();
+      if (trBounds != null) {
+        raw.put("bounds_type", union.isExtendsOrSuper() ? "extends" : "super");
+        List<Object> bounds = new ArrayList<>();
+        for (TypeReference bound : trBounds) {
+          bounds.add(serializeType(bound, reference, deCl));
+        }
+        raw.put("bounds", bounds);
       }
-      raw.put("bounds", bounds);
     }
     return raw;
   }

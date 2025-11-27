@@ -21,8 +21,6 @@ public class SimpleTypeReference extends TypeReference {
   private final TypeReference[] bounds;
 
   SimpleTypeReference(String raw) {
-    System.out.println("new SimpleTypeReference(raw=\"" + raw + "\")");
-
     raw = raw.trim();
     final int firstIndexOfExtends = raw.indexOf(" extends ");
     final int firstIndexOfSuper = raw.indexOf(" super ");
@@ -32,8 +30,8 @@ public class SimpleTypeReference extends TypeReference {
     // 'extends' or
     // 'super of' rules.
     if (firstIndexOfSubTypes != -1
-        && firstIndexOfSubTypes < firstIndexOfExtends
-        && firstIndexOfSubTypes < firstIndexOfSuper) {
+        && (firstIndexOfExtends == -1 || firstIndexOfSubTypes < firstIndexOfExtends)
+        && (firstIndexOfSuper == -1 || firstIndexOfSubTypes < firstIndexOfSuper)) {
       this.base = raw.substring(0, raw.indexOf('<'));
       List<String> subTypesStr = getGenericTypes(raw);
       subTypes = new ArrayList<>();
@@ -183,5 +181,4 @@ public class SimpleTypeReference extends TypeReference {
 
     return vars;
   }
-
 }

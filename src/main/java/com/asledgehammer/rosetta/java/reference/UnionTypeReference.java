@@ -106,10 +106,6 @@ public class UnionTypeReference extends TypeReference implements BoundReference 
     }
   }
 
-  public static void main(String[] args) {
-    System.out.println(PRIMITIVE_TYPES.contains("float"));
-  }
-
   @NotNull
   @Override
   public String compile() {
@@ -133,18 +129,19 @@ public class UnionTypeReference extends TypeReference implements BoundReference 
   @NotNull
   @Override
   public String compile(@NotNull ClassReference clazzReference, @NotNull Class<?> deCl) {
+
+    if (this.bounds == null) return this.base;
+
     StringBuilder builder = new StringBuilder(this.base);
     if (this.extendsOrSuper) {
       builder.append(" extends ");
     } else {
       builder.append(" super ");
     }
-    if (this.bounds != null) {
-      for (int i = 0; i < this.bounds.length; i++) {
-        TypeReference reference = this.bounds[i];
-        if (i != 0) builder.append(" & ");
-        builder.append(reference.compile(clazzReference, deCl));
-      }
+    for (int i = 0; i < this.bounds.length; i++) {
+      TypeReference reference = this.bounds[i];
+      if (i != 0) builder.append(" & ");
+      builder.append(reference.compile(clazzReference, deCl));
     }
     return builder.toString();
   }

@@ -90,7 +90,7 @@ public abstract class TypeReference {
   @NotNull
   public static TypeReference ofOld(@NotNull String rawType) {
     // No need to iterate.
-    if (!rawType.contains("&")) {
+    if (!rawType.contains("&") && !rawType.contains(" extends ") && !rawType.contains(" super ")) {
       TypeReference reference = new SimpleTypeReference(rawType);
       if (reference.isGeneric()) {
         reference = new UnionTypeReference(rawType, true, null);
@@ -179,7 +179,6 @@ public abstract class TypeReference {
           sub = rawType.substring(firstIndexOfExtends + (" extends ".length()));
           typeAliases = new TypeReference[] {of(sub)};
         } else if (firstIndexOfSuper != -1) {
-          System.out.println("rawType: " + rawType + ", firstIndexOfSuper: " + firstIndexOfSuper);
           sub = rawType.substring(firstIndexOfSuper + (" super ".length()));
           typeAliases = new TypeReference[] {of(sub)};
         } else {
@@ -227,19 +226,4 @@ public abstract class TypeReference {
     TypeReference reference = of(TestType.class.getTypeParameters()[1]);
     System.out.println(reference);
   }
-
-  //  public static boolean isGeneric(@NotNull String base) {
-  //    boolean wildcard = base.equals("?");
-  //    boolean primitive = PRIMITIVE_TYPES.contains(base);
-  //    boolean generic = wildcard;
-  //    if (!generic && !primitive) {
-  //      // Attempt to resolve the path. if it doesn't exist then it's considered generic.
-  //      try {
-  //        Class.forName(base, false, ClassLoader.getSystemClassLoader());
-  //      } catch (Exception e) {
-  //        generic = true;
-  //      }
-  //    }
-  //    return generic;
-  //  }
 }
