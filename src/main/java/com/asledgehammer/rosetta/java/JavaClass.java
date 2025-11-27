@@ -68,7 +68,7 @@ public class JavaClass extends RosettaObject
   }
 
   void discover(
-      @NotNull Class<?> clazz, @NotNull JavaLanguage language, @NotNull ExposureSettings settings) {
+      @NotNull Class<?> clazz, @NotNull JavaLanguage language, @NotNull JavaExposureSettings settings) {
 
     if (isDiscovered()) {
       throw new ClassAlreadyDiscoveredException(this);
@@ -122,7 +122,7 @@ public class JavaClass extends RosettaObject
     }
 
     // If the exposure-policy of the settings passed are to expose any related classes.
-    if (settings.getSuperPolicy() == ExposureSettings.SuperPolicy.EXPOSE) {
+    if (settings.getSuperPolicy() == JavaExposureSettings.SuperPolicy.EXPOSE) {
       // Ignore Object.class super-class being self-referencing.
       Class<?> clazzSuper = clazz.getSuperclass();
       if (clazzSuper != null && clazz.getSuperclass() != clazz) {

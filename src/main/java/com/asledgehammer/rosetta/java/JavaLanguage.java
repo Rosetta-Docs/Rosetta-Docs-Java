@@ -303,7 +303,7 @@ public class JavaLanguage implements RosettaLanguage {
   }
 
   @NotNull
-  public JavaClass of(@NotNull Class<?> clazz, @NotNull ExposureSettings settings) {
+  public JavaClass of(@NotNull Class<?> clazz, @NotNull JavaExposureSettings settings) {
 
     String qualifiedPath = clazz.getName();
     if (classes.containsKey(qualifiedPath)) {
@@ -333,7 +333,7 @@ public class JavaLanguage implements RosettaLanguage {
   }
 
   @NotNull
-  public JavaMethod of(@NotNull Method method, @NotNull ExposureSettings settings) {
+  public JavaMethod of(@NotNull Method method, @NotNull JavaExposureSettings settings) {
     return of(method.getDeclaringClass(), settings).getMethod(method);
   }
 

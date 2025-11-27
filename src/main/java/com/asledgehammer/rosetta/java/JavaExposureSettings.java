@@ -3,7 +3,7 @@ package com.asledgehammer.rosetta.java;
 import com.asledgehammer.rosetta.exception.ReadOnlyException;
 import org.jetbrains.annotations.NotNull;
 
-public final class ExposureSettings {
+public final class JavaExposureSettings {
 
   @NotNull private SuperPolicy superPolicy = SuperPolicy.IGNORE;
   private boolean exposeMethods = true;
@@ -11,38 +11,38 @@ public final class ExposureSettings {
   private boolean exposeConstructors = true;
   private boolean readOnly = false;
 
-  public ExposureSettings() {}
+  public JavaExposureSettings() {}
 
   @NotNull
-  public ExposureSettings setSuperPolicy(@NotNull SuperPolicy superPolicy) {
+  public JavaExposureSettings setSuperPolicy(@NotNull SuperPolicy superPolicy) {
     checkReadOnlyStatus();
     this.superPolicy = superPolicy;
     return this;
   }
 
   @NotNull
-  public ExposureSettings setExposeFields(boolean exposeFields) {
+  public JavaExposureSettings setExposeFields(boolean exposeFields) {
     checkReadOnlyStatus();
     this.exposeFields = exposeFields;
     return this;
   }
 
   @NotNull
-  public ExposureSettings setExposeConstructors(boolean exposeConstructors) {
+  public JavaExposureSettings setExposeConstructors(boolean exposeConstructors) {
     checkReadOnlyStatus();
     this.exposeConstructors = exposeConstructors;
     return this;
   }
 
   @NotNull
-  public ExposureSettings setExposeMethods(boolean exposeMethods) {
+  public JavaExposureSettings setExposeMethods(boolean exposeMethods) {
     checkReadOnlyStatus();
     this.exposeMethods = exposeMethods;
     return this;
   }
 
   @NotNull
-  public ExposureSettings build() {
+  public JavaExposureSettings build() {
     checkReadOnlyStatus();
     this.readOnly = true;
     return this;
