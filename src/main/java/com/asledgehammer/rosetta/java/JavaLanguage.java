@@ -214,6 +214,13 @@ public class JavaLanguage
       }
     }
 
+    // If using a type-dictionary, render it last to let registrations happen first.
+    if (serialize.hasTypeDictionary()) {
+      Map<String, Object> types = new HashMap<>();
+      serialize.getTypeDictionary().render(types);
+      raw.put("types", types);
+    }
+
     return raw;
   }
 

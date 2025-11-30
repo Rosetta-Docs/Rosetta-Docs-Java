@@ -15,10 +15,10 @@ public class TestTypeDictionary {
   public void test() {
 
     JavaDiscoverySettings settings = new JavaDiscoverySettings();
-    settings.setSuperPolicy(JavaDiscoverySettings.SuperPolicy.EXPOSE);
+    settings.setSuperPolicy(JavaDiscoverySettings.SuperPolicy.IGNORE);
 
     JavaLanguage language = new JavaLanguage();
-    JavaClass javaClass = language.of(settings, MyArrayList.class);
+    language.of(settings, MyArrayList.class);
 
     RosettaCollection collection = Rosetta.createCollection();
     collection.addLanguage(language);
@@ -28,7 +28,7 @@ public class TestTypeDictionary {
 
     String yaml =
         collection.save(
-            "test",
+            "test", // For type-dictionary
             (id, app) -> Map.of(),
             (id, lang) -> {
               if (lang instanceof JavaLanguage javaLanguage) {
@@ -38,9 +38,5 @@ public class TestTypeDictionary {
             });
 
     System.out.println(yaml);
-
-    //    System.out.println(collection.save(() => {
-    //      serializeSettings
-    //    }));
   }
 }

@@ -399,8 +399,13 @@ public class JavaClass extends RosettaObject
 
     // Serialize the super-class type.
     if (this.extendz != null) {
-      // TODO: Implement with Serialize Type-Dictionary.
-      raw.put("extends", JavaLanguage.serializeType(this.extendz, targetReference, target));
+      if (serialize.hasTypeDictionary()) {
+        raw.put(
+            "extends",
+            serialize.getTypeDictionary().register(this.extendz, targetReference, target));
+      } else {
+        raw.put("extends", JavaLanguage.serializeType(this.extendz, targetReference, target));
+      }
     }
 
     // Serialize any super-interface type(s).
