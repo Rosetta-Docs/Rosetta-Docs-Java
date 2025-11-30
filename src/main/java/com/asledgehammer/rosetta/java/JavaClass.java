@@ -412,8 +412,15 @@ public class JavaClass extends RosettaObject
     if (this.implementz != null && !this.implementz.isEmpty()) {
       // TODO: Implement with Serialize Type-Dictionary.
       final List<Object> implementz = new ArrayList<>();
-      for (TypeReference implement : this.implementz) {
-        implementz.add(JavaLanguage.serializeType(implement, targetReference, target));
+      if (serialize.hasTypeDictionary()) {
+        final JavaTypeDictionary typeDictionary = serialize.getTypeDictionary();
+        for (TypeReference implement : this.implementz) {
+          implementz.add(typeDictionary.register(implement, targetReference, target));
+        }
+      } else {
+        for (TypeReference implement : this.implementz) {
+          implementz.add(JavaLanguage.serializeType(implement, targetReference, target));
+        }
       }
       raw.put("implements", implementz);
     }

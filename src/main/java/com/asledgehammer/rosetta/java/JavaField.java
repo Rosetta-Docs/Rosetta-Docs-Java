@@ -149,11 +149,16 @@ public class JavaField extends RosettaObject
   }
 
   @NotNull
-  protected Map<String, Object> onSave(@NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference) {
+  protected Map<String, Object> onSave(
+      @NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference) {
     final Map<String, Object> raw = new HashMap<>();
 
     Class<?> deCl = reflectedObject.getDeclaringClass();
-    raw.put("type", JavaLanguage.serializeType(type, reference, deCl));
+    if (serialize.hasTypeDictionary()) {
+      raw.put("type", serialize.getTypeDictionary().register(type, reference, deCl));
+    } else {
+      raw.put("type", JavaLanguage.serializeType(type, reference, deCl));
+    }
     raw.put("scope", this.scope.getID());
 
     if (isNullable()) raw.put("nullable", true);

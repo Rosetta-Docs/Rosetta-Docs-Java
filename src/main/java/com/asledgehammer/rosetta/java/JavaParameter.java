@@ -94,7 +94,11 @@ public class JavaParameter extends RosettaObject
       raw.put("notes", getNotes());
     }
     raw.put("nullable", isNullable());
-    raw.put("type", JavaLanguage.serializeType(this.type, reference, deCl));
+    if (serialize.hasTypeDictionary()) {
+      raw.put("type", serialize.getTypeDictionary().register(this.type, reference, deCl));
+    } else {
+      raw.put("type", JavaLanguage.serializeType(this.type, reference, deCl));
+    }
     return raw;
   }
 
