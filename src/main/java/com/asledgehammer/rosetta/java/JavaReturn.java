@@ -72,9 +72,9 @@ public class JavaReturn extends RosettaObject implements Notable {
     }
 
     if (serialize.hasTypeDictionary()) {
-      raw.put("type", serialize.getTypeDictionary().register(getType(), reference, deCl));
+      raw.put("type", serialize.getTypeDictionary().register(serialize, getType(), reference, deCl));
     } else {
-      raw.put("type", JavaLanguage.serializeType(getType(), reference, deCl));
+      raw.put("type", JavaLanguage.serializeType(serialize, getType(), reference, deCl));
     }
 
     return raw;

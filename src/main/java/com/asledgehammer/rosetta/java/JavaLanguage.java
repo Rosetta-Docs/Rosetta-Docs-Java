@@ -288,7 +288,10 @@ public class JavaLanguage
    */
   @NotNull
   public static Object serializeType(
-      @NotNull TypeReference type, @NotNull ClassReference reference, @NotNull Class<?> deCl) {
+      @NotNull JavaSerializeInstance serialize,
+      @NotNull TypeReference type,
+      @NotNull ClassReference reference,
+      @NotNull Class<?> deCl) {
     Map<String, Object> raw;
     if (type instanceof SimpleTypeReference simple) {
       raw = new HashMap<>();
@@ -306,8 +309,15 @@ public class JavaLanguage
 
       if (simple.hasSubTypes()) {
         List<Object> parameters = new ArrayList<>();
-        for (TypeReference subType : simple.getSubTypes()) {
-          parameters.add(serializeType(subType, reference, deCl));
+        if (serialize.hasTypeDictionary()) {
+          final JavaTypeDictionary typeDictionary = serialize.getTypeDictionary();
+          for (TypeReference subType : simple.getSubTypes()) {
+            parameters.add(typeDictionary.register(serialize, subType, reference, deCl));
+          }
+        } else {
+          for (TypeReference subType : simple.getSubTypes()) {
+            parameters.add(serializeType(serialize, subType, reference, deCl));
+          }
         }
         raw.put("parameters", parameters);
       }
@@ -321,8 +331,15 @@ public class JavaLanguage
       if (trBounds != null) {
         raw.put("bounds_type", union.isExtendsOrSuper() ? "extends" : "super");
         List<Object> bounds = new ArrayList<>();
-        for (TypeReference bound : trBounds) {
-          bounds.add(serializeType(bound, reference, deCl));
+        if (serialize.hasTypeDictionary()) {
+          final JavaTypeDictionary typeDictionary = serialize.getTypeDictionary();
+          for (TypeReference bound : trBounds) {
+            bounds.add(typeDictionary.register(serialize, bound, reference, deCl));
+          }
+        } else {
+          for (TypeReference bound : trBounds) {
+            bounds.add(serializeType(serialize, bound, reference, deCl));
+          }
         }
         raw.put("bounds", bounds);
       }

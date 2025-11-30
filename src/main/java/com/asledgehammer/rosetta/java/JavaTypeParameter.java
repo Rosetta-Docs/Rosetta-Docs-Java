@@ -48,9 +48,9 @@ public class JavaTypeParameter {
     Map<String, Object> raw = new HashMap<>();
 
     if (serialize.hasTypeDictionary()) {
-      raw.put("type", serialize.getTypeDictionary().register(type, reference, deCl));
+      raw.put("type", serialize.getTypeDictionary().register(serialize, type, reference, deCl));
     } else {
-      raw.put("type", JavaLanguage.serializeType(type, reference, deCl));
+      raw.put("type", JavaLanguage.serializeType(serialize, type, reference, deCl));
     }
 
     if (hasNotes()) raw.put("notes", getNotes());

@@ -402,9 +402,9 @@ public class JavaClass extends RosettaObject
       if (serialize.hasTypeDictionary()) {
         raw.put(
             "extends",
-            serialize.getTypeDictionary().register(this.extendz, targetReference, target));
+            serialize.getTypeDictionary().register(serialize, this.extendz, targetReference, target));
       } else {
-        raw.put("extends", JavaLanguage.serializeType(this.extendz, targetReference, target));
+        raw.put("extends", JavaLanguage.serializeType(serialize, this.extendz, targetReference, target));
       }
     }
 
@@ -415,11 +415,11 @@ public class JavaClass extends RosettaObject
       if (serialize.hasTypeDictionary()) {
         final JavaTypeDictionary typeDictionary = serialize.getTypeDictionary();
         for (TypeReference implement : this.implementz) {
-          implementz.add(typeDictionary.register(implement, targetReference, target));
+          implementz.add(typeDictionary.register(serialize, implement, targetReference, target));
         }
       } else {
         for (TypeReference implement : this.implementz) {
-          implementz.add(JavaLanguage.serializeType(implement, targetReference, target));
+          implementz.add(JavaLanguage.serializeType(serialize, implement, targetReference, target));
         }
       }
       raw.put("implements", implementz);

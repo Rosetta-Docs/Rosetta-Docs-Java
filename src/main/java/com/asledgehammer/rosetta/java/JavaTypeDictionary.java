@@ -27,14 +27,17 @@ public class JavaTypeDictionary {
    * @param deCl The declaring class of the type.
    */
   public String register(
-      @NotNull TypeReference type, @NotNull ClassReference classReference, @NotNull Class<?> deCl) {
+      @NotNull JavaSerializeInstance serialize,
+      @NotNull TypeReference type,
+      @NotNull ClassReference classReference,
+      @NotNull Class<?> deCl) {
 
     final String fKey = type.compile(classReference, deCl);
     if (mapReference.containsKey(fKey)) {
       return "$" + id + ":" + mapReference.get(fKey);
     }
 
-    Object value = JavaLanguage.serializeType(type, classReference, deCl);
+    Object value = JavaLanguage.serializeType(serialize, type, classReference, deCl);
     int iKey = mapRendered.size();
     mapRendered.put(iKey, value);
     mapReference.put(fKey, iKey);
