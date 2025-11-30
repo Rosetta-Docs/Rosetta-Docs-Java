@@ -192,10 +192,10 @@ public class JavaLanguage
   public Map<String, Object> onSave(@NotNull JavaSerializeSettings settings, @NotNull String id) {
 
     final JavaSerializeInstance serialize = new JavaSerializeInstance(settings, id);
-    final Map<String, Object> raw = new HashMap<>();
+    final Map<String, Object> raw = new TreeMap<>();
 
     if (hasPackages()) {
-      final Map<String, Object> packages = new HashMap<>();
+      final Map<String, Object> packages = new TreeMap<>();
 
       // Go through each package alphanumerically.
       final List<String> keys = new ArrayList<>(this.packages.keySet());
@@ -215,7 +215,7 @@ public class JavaLanguage
 
     // If using a type-dictionary, render it last to let registrations happen first.
     if (serialize.hasTypeDictionary()) {
-      Map<String, Object> types = new HashMap<>();
+      Map<String, Object> types = new TreeMap<>();
       serialize.getTypeDictionary().render(types);
       raw.put("types", types);
     }
@@ -293,14 +293,16 @@ public class JavaLanguage
       @NotNull Class<?> deCl) {
     Map<String, Object> raw;
     if (type instanceof SimpleTypeReference simple) {
-      raw = new HashMap<>();
 
       // The most simple form of a type. Only serialize the base string.
       if (!simple.hasSubTypes() && !simple.isGeneric()) {
         return type.compile(reference, deCl);
       }
 
-      raw.put("full", simple.compile(reference, deCl));
+      raw = new TreeMap<>();
+      if (serialize.isWriteFullType()) {
+        raw.put("full", simple.compile(reference, deCl));
+      }
       raw.put("base", simple.getBase());
       if (type.isGeneric()) {
         raw.put("generic", true);
@@ -322,7 +324,7 @@ public class JavaLanguage
       }
     } else {
       UnionTypeReference union = (UnionTypeReference) type;
-      raw = new HashMap<>();
+      raw = new TreeMap<>();
       raw.put("full", union.compile(reference, deCl));
       raw.put("base", union.getBase());
       raw.put("generic", union.isGeneric());

@@ -13,6 +13,19 @@ public class JavaSerializeSettings implements RosettaSerializeSettings {
 
   private boolean renderTypesAsDictionary = false;
 
+  private boolean writeFullType = false;
+
+  public boolean isWriteFullType() {
+    return writeFullType;
+  }
+
+  @NotNull
+  public JavaSerializeSettings setWriteFullType(boolean writeFullType) {
+    checkReadOnlyStatus();
+    this.writeFullType = writeFullType;
+    return this;
+  }
+
   public FullTypeRenderSettings getFullTypeRenderSettings() {
     return fullTypeRenderSettings;
   }

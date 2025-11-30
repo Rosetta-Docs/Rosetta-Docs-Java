@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 
 public class TestTypeDictionary {
 
-  static class MyArrayList extends ArrayList<String> {}
-
   @Test
   public void test() {
 
@@ -18,7 +16,7 @@ public class TestTypeDictionary {
     settings.setSuperPolicy(JavaDiscoverySettings.SuperPolicy.IGNORE);
 
     JavaLanguage language = new JavaLanguage();
-    language.of(settings, MyArrayList.class);
+    language.of(settings, ArrayList.class);
 
     RosettaCollection collection = Rosetta.createCollection();
     collection.addLanguage(language);

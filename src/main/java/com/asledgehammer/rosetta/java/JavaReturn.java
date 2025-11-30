@@ -64,8 +64,8 @@ public class JavaReturn extends RosettaObject implements Notable {
       raw.put("notes", getNotes());
     }
 
-    if (isNullable()) {
-      raw.put("nullable", true);
+    if (!isNullable()) {
+      raw.put("nullable", false);
     }
 
     if (serialize.hasTypeDictionary()) {

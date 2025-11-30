@@ -37,4 +37,8 @@ public class JavaSerializeInstance {
   public boolean hasTypeDictionary() {
     return this.typeDictionary != null;
   }
+
+  public boolean isWriteFullType() {
+    return this.settings.isWriteFullType();
+  }
 }

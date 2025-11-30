@@ -164,7 +164,7 @@ public class JavaField extends RosettaObject
       raw.put("scope", scope.getID());
     }
 
-    if (isNullable()) raw.put("nullable", true);
+    if (!isNullable()) raw.put("nullable", false);
     if (isVolatile()) raw.put("volatile", true);
     if (isTransient()) raw.put("transient", true);
     if (isNative()) raw.put("native", true);

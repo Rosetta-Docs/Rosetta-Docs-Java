@@ -301,14 +301,14 @@ public class RosettaCollection {
       @NotNull BiFunction<String, RosettaApplication, Map<String, Object>> applicationCallback,
       @NotNull BiFunction<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback) {
 
-    final Map<String, Object> raw = new HashMap<>();
+    final Map<String, Object> raw = new TreeMap<>();
 
     raw.put("id", id);
     raw.put("version", version);
     raw.put("locale", locale);
 
     if (hasLanguages()) {
-      final Map<String, Object> languages = new HashMap<>();
+      final Map<String, Object> languages = new TreeMap<>();
       List<String> keys = new ArrayList<>(this.languages.keySet());
       keys.sort(Comparator.naturalOrder());
       for (String key : keys) {
@@ -321,7 +321,7 @@ public class RosettaCollection {
     }
 
     if (hasApplications()) {
-      final Map<String, Object> applications = new HashMap<>();
+      final Map<String, Object> applications = new TreeMap<>();
       List<String> keys = new ArrayList<>(this.applications.keySet());
       keys.sort(Comparator.naturalOrder());
       for (String key : keys) {

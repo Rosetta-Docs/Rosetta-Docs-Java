@@ -48,7 +48,7 @@ public class JavaTypeDictionary {
    */
   public void render(@NotNull Map<String, Object> raw) {
     List<Integer> keys = new ArrayList<>(mapRendered.keySet());
-    keys.sort(Comparator.naturalOrder());
+    keys.sort(Integer::compare);
     for (int key : keys) raw.put("" + key, mapRendered.get(key));
   }
 
