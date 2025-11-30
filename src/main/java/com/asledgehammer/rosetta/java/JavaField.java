@@ -159,7 +159,10 @@ public class JavaField extends RosettaObject
     } else {
       raw.put("type", JavaLanguage.serializeType(serialize, type, reference, deCl));
     }
-    raw.put("scope", this.scope.getID());
+
+    if (scope != JavaScope.PACKAGE) {
+      raw.put("scope", scope.getID());
+    }
 
     if (isNullable()) raw.put("nullable", true);
     if (isVolatile()) raw.put("volatile", true);

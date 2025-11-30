@@ -353,13 +353,8 @@ public class JavaLanguage
   }
 
   @NotNull
-  public static JavaScope getScope(@NotNull Constructor<?> constructor) {
-    return getScope(constructor.getModifiers());
-  }
-
-  @NotNull
-  public static JavaScope getScope(@NotNull Method method) {
-    return getScope(method.getModifiers());
+  public static JavaScope getScope(@NotNull Executable executable) {
+    return getScope(executable.getModifiers());
   }
 
   @NotNull

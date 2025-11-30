@@ -214,6 +214,17 @@ public class JavaClass extends RosettaObject
   protected void onLoad(
       @NotNull JavaDeserializeInstance deserialize, @NotNull final Map<String, Object> raw) {
 
+    // Load scope. (If defined; DEFAULT: "package")
+    if (raw.containsKey("scope")) {
+      Object oScope = raw.get("scope");
+      if (!(oScope instanceof String)) {
+        throw new ValueTypeException(name, "scope", oScope.getClass(), String.class);
+      }
+      this.scope = JavaScope.of((String) oScope);
+    } else {
+      this.scope = JavaScope.PACKAGE;
+    }
+
     // If the class is defined as static.
     if (raw.containsKey("static")) {
       Object oStatic = raw.get("static");
@@ -380,6 +391,10 @@ public class JavaClass extends RosettaObject
   protected Map<String, Object> onSave(@NotNull JavaSerializeInstance serialize) {
 
     final Map<String, Object> raw = new HashMap<>();
+
+    if (scope != JavaScope.PACKAGE) {
+      raw.put("scope", scope.getID());
+    }
 
     if (isStatic) {
       raw.put("static", true);

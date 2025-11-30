@@ -32,6 +32,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
 
   private final String signature;
   protected final String name;
+  private JavaScope scope;
 
   private String notes;
 
@@ -61,6 +62,8 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     this.target = executable;
     this.name = executable.getName();
     this.signature = createSignature(this);
+
+    this.scope = JavaLanguage.getScope(executable);
 
     // Register any generic parameter variables.
     TypeVariable<?>[] typeVariables = executable.getTypeParameters();
@@ -104,6 +107,17 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
       }
     }
 
+    // Load scope. (If defined; DEFAULT: "package")
+    if (raw.containsKey("scope")) {
+      Object oScope = raw.get("scope");
+      if (!(oScope instanceof String)) {
+        throw new ValueTypeException(name, "scope", oScope.getClass(), String.class);
+      }
+      this.scope = JavaScope.of((String) oScope);
+    } else {
+      this.scope = JavaScope.PACKAGE;
+    }
+
     if (raw.containsKey("deprecated")) {
       Object oDeprecated = raw.get("deprecated");
       if (oDeprecated instanceof String) {
@@ -120,10 +134,15 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
   }
 
   @NotNull
-  protected Map<String, Object> onSave(@NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference) {
+  protected Map<String, Object> onSave(
+      @NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference) {
     Map<String, Object> raw = new HashMap<>();
 
     final Class<?> deCl = getReflectionTarget().getDeclaringClass();
+
+    if (scope != JavaScope.PACKAGE) {
+      raw.put("scope", scope.getID());
+    }
 
     if (hasNotes()) {
       raw.put("notes", getNotes());
