@@ -49,7 +49,11 @@ public class JavaClass extends RosettaObject
     this.constructors = new JavaExecutableCollection<>(this.name);
   }
 
-  JavaClass(@NotNull JavaPackage pkg, @NotNull String name, @NotNull Map<String, Object> raw) {
+  JavaClass(
+      @NotNull JavaPackage pkg,
+      @NotNull String name,
+      @NotNull JavaDeserializeInstance deserialize,
+      @NotNull Map<String, Object> raw) {
     super();
 
     this.pkg = pkg;
@@ -64,11 +68,13 @@ public class JavaClass extends RosettaObject
       this.targetReference = null;
     }
 
-    onLoad(raw);
+    onLoad(deserialize, raw);
   }
 
   void discover(
-      @NotNull Class<?> clazz, @NotNull JavaLanguage language, @NotNull JavaExposureSettings settings) {
+      @NotNull JavaDiscoverySettings settings,
+      @NotNull Class<?> clazz,
+      @NotNull JavaLanguage language) {
 
     if (isDiscovered()) {
       throw new ClassAlreadyDiscoveredException(this);
@@ -122,14 +128,14 @@ public class JavaClass extends RosettaObject
     }
 
     // If the exposure-policy of the settings passed are to expose any related classes.
-    if (settings.getSuperPolicy() == JavaExposureSettings.SuperPolicy.EXPOSE) {
+    if (settings.getSuperPolicy() == JavaDiscoverySettings.SuperPolicy.EXPOSE) {
       // Ignore Object.class super-class being self-referencing.
       Class<?> clazzSuper = clazz.getSuperclass();
       if (clazzSuper != null && clazz.getSuperclass() != clazz) {
-        language.of(clazzSuper, settings);
+        language.of(settings, clazzSuper);
       }
       for (Class<?> interfaze : clazz.getInterfaces()) {
-        language.of(interfaze, settings);
+        language.of(settings, interfaze);
       }
     }
 
@@ -205,7 +211,8 @@ public class JavaClass extends RosettaObject
     return true;
   }
 
-  protected void onLoad(@NotNull final Map<String, Object> raw) {
+  protected void onLoad(
+      @NotNull JavaDeserializeInstance deserialize, @NotNull final Map<String, Object> raw) {
 
     // If the class is defined as static.
     if (raw.containsKey("static")) {
@@ -231,11 +238,13 @@ public class JavaClass extends RosettaObject
 
     // If the class extends another, resolve the type.
     if (raw.containsKey("extends")) {
+      // TODO: Implement Deserialize instance.
       this.extendz = JavaLanguage.resolveType(raw.get("extends"));
     }
 
     // Any implementation types are resolved.
     if (raw.containsKey("implements")) {
+      // TODO: Implement Deserialize instance.
       Object oImplements = raw.get("implements");
       if (!(oImplements instanceof List)) {
         throw new ValueTypeException("class", "implements", oImplements.getClass(), List.class);
@@ -277,6 +286,7 @@ public class JavaClass extends RosettaObject
       }
 
       for (Object oTypeParameter : (List<Object>) oTypeParameters) {
+        // TODO: Implement Deserialize instance.
         JavaTypeParameter javaTypeParameter =
             new JavaTypeParameter(JavaLanguage.resolveType(oTypeParameter));
         this.typeParameters.add(javaTypeParameter);
@@ -295,7 +305,8 @@ public class JavaClass extends RosettaObject
         if (!(oClass instanceof Map)) {
           throw new ValueTypeException("class.classes", key, oClass.getClass(), Map.class);
         }
-        this.classes.put(key, new JavaClass(this.pkg, key, (Map<String, Object>) oClass));
+        this.classes.put(
+            key, new JavaClass(this.pkg, key, deserialize, (Map<String, Object>) oClass));
       }
     }
 
@@ -366,7 +377,7 @@ public class JavaClass extends RosettaObject
   }
 
   @NotNull
-  protected Map<String, Object> onSave() {
+  protected Map<String, Object> onSave(@NotNull JavaSerializeInstance serialize) {
 
     final Map<String, Object> raw = new HashMap<>();
 
@@ -381,18 +392,20 @@ public class JavaClass extends RosettaObject
     if (!typeParameters.isEmpty()) {
       final List<Object> listTypeParameters = new ArrayList<>();
       for (JavaTypeParameter typeParameter : typeParameters) {
-        listTypeParameters.add(typeParameter.onSave(targetReference, target));
+        listTypeParameters.add(typeParameter.onSave(serialize, targetReference, target));
       }
       raw.put("type_parameters", listTypeParameters);
     }
 
     // Serialize the super-class type.
     if (this.extendz != null) {
+      // TODO: Implement with Serialize Type-Dictionary.
       raw.put("extends", JavaLanguage.serializeType(this.extendz, targetReference, target));
     }
 
     // Serialize any super-interface type(s).
     if (this.implementz != null && !this.implementz.isEmpty()) {
+      // TODO: Implement with Serialize Type-Dictionary.
       final List<Object> implementz = new ArrayList<>();
       for (TypeReference implement : this.implementz) {
         implementz.add(JavaLanguage.serializeType(implement, targetReference, target));
@@ -427,7 +440,7 @@ public class JavaClass extends RosettaObject
       keys.sort(Comparator.naturalOrder());
       for (String key : keys) {
         JavaClass javaClass = this.classes.get(key);
-        classes.put(key, javaClass.onSave());
+        classes.put(key, javaClass.onSave(serialize));
       }
       raw.put("classes", classes);
     }
@@ -439,7 +452,7 @@ public class JavaClass extends RosettaObject
       keys.sort(Comparator.naturalOrder());
       for (String key : keys) {
         JavaField javaField = this.fields.get(key);
-        fields.put(key, javaField.onSave(this.targetReference));
+        fields.put(key, javaField.onSave(serialize, this.targetReference));
       }
       raw.put("fields", fields);
     }
@@ -451,7 +464,7 @@ public class JavaClass extends RosettaObject
           new ArrayList<>(this.constructors.getExecutables());
       javaConstructors.sort(Comparator.comparing(JavaExecutable::getSignature));
       for (JavaConstructor constructor : javaConstructors) {
-        constructors.add(constructor.onSave(targetReference));
+        constructors.add(constructor.onSave(serialize, targetReference));
       }
       raw.put("constructors", constructors);
     }
@@ -472,7 +485,7 @@ public class JavaClass extends RosettaObject
           javaMethods.sort(Comparator.comparing(JavaExecutable::getSignature));
         }
         for (JavaMethod method : javaMethods) {
-          methods.add(method.onSave(targetReference));
+          methods.add(method.onSave(serialize, targetReference));
         }
       }
       raw.put("methods", methods);

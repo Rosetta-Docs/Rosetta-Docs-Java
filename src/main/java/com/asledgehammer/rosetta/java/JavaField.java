@@ -149,7 +149,7 @@ public class JavaField extends RosettaObject
   }
 
   @NotNull
-  protected Map<String, Object> onSave(@NotNull ClassReference reference) {
+  protected Map<String, Object> onSave(@NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference) {
     final Map<String, Object> raw = new HashMap<>();
 
     Class<?> deCl = reflectedObject.getDeclaringClass();

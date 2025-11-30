@@ -3,6 +3,7 @@ package com.asledgehammer.rosetta;
 import com.asledgehammer.rosetta.exception.RosettaException;
 import java.io.*;
 import java.util.*;
+import java.util.function.BiFunction;
 
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +23,7 @@ import org.snakeyaml.engine.v2.api.Load;
  */
 public class RosettaCollection {
 
-  private final Map<String, RosettaLanguage> languages = new HashMap<>();
+  private final Map<String, RosettaLanguage<?, ?>> languages = new HashMap<>();
   private final Map<String, RosettaApplication> applications = new HashMap<>();
 
   private String locale = "EN_US";
@@ -38,14 +39,18 @@ public class RosettaCollection {
    * @throws IOException If something is thrown during the process of loading and reading the file.
    */
   @SuppressWarnings({"unchecked"})
-  public void load(@NotNull File file) throws IOException {
+  public void load(
+      @NotNull TriConsumer<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull TriConsumer<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull File file)
+      throws IOException {
     Load reader = Rosetta.getYamlReader();
     Object raw = reader.loadAllFromReader(new FileReader(file));
     if (!(raw instanceof Map)) {
       throw new RosettaException(
           "Invalid YAML root type: " + raw.getClass().getName() + " (Must be dictionary/Map)");
     }
-    onLoad((Map<String, Object>) raw);
+    onLoad(applicationCallback, languageCallback, (Map<String, Object>) raw);
   }
 
   /**
@@ -55,14 +60,17 @@ public class RosettaCollection {
    * @throws NullPointerException If the reader is null.
    */
   @SuppressWarnings({"unchecked"})
-  public void load(@NotNull Reader reader) {
+  public void load(
+      @NotNull TriConsumer<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull TriConsumer<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull Reader reader) {
     Load load = Rosetta.getYamlReader();
     Object raw = load.loadAllFromReader(reader);
     if (!(raw instanceof Map)) {
       throw new RosettaException(
           "Invalid YAML root type: " + raw.getClass().getName() + " (Must be dictionary/Map)");
     }
-    onLoad((Map<String, Object>) raw);
+    onLoad(applicationCallback, languageCallback, (Map<String, Object>) raw);
   }
 
   /**
@@ -72,14 +80,17 @@ public class RosettaCollection {
    * @throws NullPointerException If the stream is null.
    */
   @SuppressWarnings({"unchecked"})
-  public void load(@NotNull InputStream stream) {
+  public void load(
+      @NotNull TriConsumer<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull TriConsumer<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull InputStream stream) {
     Load load = Rosetta.getYamlReader();
     Object raw = load.loadFromInputStream(stream);
     if (!(raw instanceof Map)) {
       throw new RosettaException(
           "Invalid YAML root type: " + raw.getClass().getName() + " (Must be dictionary/Map)");
     }
-    onLoad((Map<String, Object>) raw);
+    onLoad(applicationCallback, languageCallback, (Map<String, Object>) raw);
   }
 
   /**
@@ -89,7 +100,10 @@ public class RosettaCollection {
    * @throws NullPointerException If the YAML string is null.
    */
   @SuppressWarnings({"unchecked"})
-  public void load(@NotNull String yaml) {
+  public void load(
+      @NotNull TriConsumer<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull TriConsumer<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull String yaml) {
 
     if (yaml.isEmpty()) {
       throw new IllegalArgumentException("The YAML string is empty.");
@@ -102,7 +116,7 @@ public class RosettaCollection {
       throw new RuntimeException("Improperly formatted Rosetta YAML:\n" + yaml);
     }
 
-    onLoad((Map<String, Object>) oRaw);
+    onLoad(applicationCallback, languageCallback, (Map<String, Object>) oRaw);
   }
 
   /**
@@ -110,7 +124,17 @@ public class RosettaCollection {
    * @throws NullPointerException If the raw map is null.
    */
   @SuppressWarnings({"unchecked"})
-  private void onLoad(@NotNull Map<String, Object> data) {
+  private void onLoad(
+      @NotNull TriConsumer<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull TriConsumer<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull Map<String, Object> data) {
+
+    if (!data.containsKey("id")) {
+      throw new RosettaException("Missing \"id\" property at root of Rosetta YAML file.");
+    }
+
+    final String id = data.get("id").toString().trim();
+
     // Grab the key.
     if (!data.containsKey("version")) {
       throw new RosettaException("Missing \"version\" property at root of Rosetta YAML file.");
@@ -139,7 +163,7 @@ public class RosettaCollection {
       if (!(oLanguages instanceof Map)) {
         throw new ValueTypeException("<ROOT>", "languages", oLanguages.getClass(), Map.class);
       }
-      onLoadLanguages((Map<String, Object>) oLanguages);
+      onLoadLanguages(id, languageCallback, (Map<String, Object>) oLanguages);
     }
 
     if (data.containsKey("applications")) {
@@ -147,7 +171,7 @@ public class RosettaCollection {
       if (!(oApplications instanceof Map)) {
         throw new ValueTypeException("<ROOT>", "applications", oApplications.getClass(), Map.class);
       }
-      onLoadApplications((Map<String, Object>) oApplications);
+      onLoadApplications(id, applicationCallback, (Map<String, Object>) oApplications);
     }
   }
 
@@ -156,20 +180,24 @@ public class RosettaCollection {
    * @throws NullPointerException If the languages map is null.
    */
   @SuppressWarnings({"unchecked"})
-  private void onLoadLanguages(@NotNull Map<String, Object> languages) {
+  private void onLoadLanguages(
+      @NotNull String id,
+      @NotNull TriConsumer<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull Map<String, Object> languages) {
     final List<String> keys = new ArrayList<>(languages.keySet());
     keys.sort(Comparator.naturalOrder());
 
     for (String key : keys) {
       String keyLower = key.toLowerCase().trim();
-      RosettaLanguage language;
+      RosettaLanguage<?, ?> language;
       if (!hasLanguage(keyLower)) {
         language = Rosetta.createLanguage(keyLower);
         this.languages.put(keyLower, language);
       } else {
         language = this.languages.get(keyLower);
       }
-      language.onLoad((Map<String, Object>) languages.get(key));
+      /* language.onLoad((Map<String, Object>) languages.get(key)); */
+      languageCallback.accept(id, language, (Map<String, Object>) languages.get(key));
     }
   }
 
@@ -178,7 +206,10 @@ public class RosettaCollection {
    * @throws NullPointerException If the applications map is null.
    */
   @SuppressWarnings({"unchecked"})
-  private void onLoadApplications(@NotNull Map<String, Object> applications) {
+  private void onLoadApplications(
+      @NotNull String id,
+      @NotNull TriConsumer<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull Map<String, Object> applications) {
     final List<String> keys = new ArrayList<>(applications.keySet());
     keys.sort(Comparator.naturalOrder());
 
@@ -191,7 +222,8 @@ public class RosettaCollection {
       } else {
         application = this.applications.get(keyLower);
       }
-      application.onLoad((Map<String, Object>) applications.get(key));
+      /* application.onLoad((Map<String, Object>) applications.get(key)); */
+      applicationCallback.accept(id, application, (Map<String, Object>) applications.get(key));
     }
   }
 
@@ -199,9 +231,13 @@ public class RosettaCollection {
    * @param file The file to write.
    * @throws NullPointerException If the file is null.
    */
-  public void save(@NotNull File file) {
+  public void save(
+      @NotNull String id,
+      @NotNull BiFunction<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull BiFunction<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull File file) {
     try (FileWriter fw = new FileWriter(file)) {
-      fw.write(save());
+      fw.write(save(id, applicationCallback, languageCallback));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -212,8 +248,13 @@ public class RosettaCollection {
    * @throws NullPointerException If the writer is null.
    * @throws IOException If something happens during the writing of contents.
    */
-  public void save(@NotNull BufferedWriter writer) throws IOException {
-    writer.write(save());
+  public void save(
+      @NotNull String id,
+      @NotNull BiFunction<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull BiFunction<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull BufferedWriter writer)
+      throws IOException {
+    writer.write(save(id, applicationCallback, languageCallback));
   }
 
   /**
@@ -221,16 +262,24 @@ public class RosettaCollection {
    * @throws NullPointerException If the stream is null.
    * @throws IOException If something happens during the writing of contents.
    */
-  public void save(@NotNull DataOutputStream stream) throws IOException {
-    stream.writeUTF(save());
+  public void save(
+      @NotNull String id,
+      @NotNull BiFunction<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull BiFunction<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull DataOutputStream stream)
+      throws IOException {
+    stream.writeUTF(save(id, applicationCallback, languageCallback));
   }
 
   /**
    * @return A YAML-Serialized string.
    */
   @NotNull
-  public String save() {
-    return save(Rosetta.getYamlWriter());
+  public String save(
+      @NotNull String id,
+      @NotNull BiFunction<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull BiFunction<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback) {
+    return save(id, applicationCallback, languageCallback, Rosetta.getYamlWriter());
   }
 
   /**
@@ -239,15 +288,23 @@ public class RosettaCollection {
    * @throws NullPointerException If the writer is null.
    */
   @NotNull
-  public String save(@NotNull Dump writer) {
-    return writer.dumpToString(onSave());
+  public String save(
+      @NotNull String id,
+      @NotNull BiFunction<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull BiFunction<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull Dump writer) {
+    return writer.dumpToString(onSave(id, applicationCallback, languageCallback));
   }
 
   @NotNull
-  public Map<String, Object> onSave() {
+  public Map<String, Object> onSave(
+      @NotNull String id,
+      @NotNull BiFunction<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull BiFunction<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback) {
 
     final Map<String, Object> raw = new HashMap<>();
 
+    raw.put("id", id);
     raw.put("version", version);
     raw.put("locale", locale);
 
@@ -256,7 +313,10 @@ public class RosettaCollection {
       List<String> keys = new ArrayList<>(this.languages.keySet());
       keys.sort(Comparator.naturalOrder());
       for (String key : keys) {
-        languages.put(key, this.languages.get(key).onSave());
+        languages.put(
+            key,
+            /* this.languages.get(key).onSave() */
+            languageCallback.apply(id, this.languages.get(key)));
       }
       raw.put("languages", languages);
     }
@@ -266,7 +326,10 @@ public class RosettaCollection {
       List<String> keys = new ArrayList<>(this.applications.keySet());
       keys.sort(Comparator.naturalOrder());
       for (String key : keys) {
-        applications.put(key, this.applications.get(key).onSave());
+        applications.put(
+            key,
+            /* this.applications.get(key).onSave() */
+            applicationCallback.apply(id, this.applications.get(key)));
       }
       raw.put("applications", applications);
     }
@@ -289,7 +352,7 @@ public class RosettaCollection {
    * @throws IllegalArgumentException If the RosettaLanguage's ID marches an existing
    *     RosettaLanguage object that's already in the collection.
    */
-  public void addLanguage(@NotNull RosettaLanguage lang) {
+  public void addLanguage(@NotNull RosettaLanguage<?, ?> lang) {
     String idLower = lang.getID().toLowerCase();
     if (languages.containsKey(idLower)) {
       throw new IllegalArgumentException(
@@ -306,7 +369,7 @@ public class RosettaCollection {
    * @throws IllegalArgumentException If the RosettaLanguage's ID doesn't march an existing
    *     RosettaLanguage object that's in the collection.
    */
-  public void removeLanguage(@NotNull RosettaLanguage lang) {
+  public void removeLanguage(@NotNull RosettaLanguage<?, ?> lang) {
 
     String idLower = lang.getID().toLowerCase();
     if (!languages.containsKey(idLower)) {
@@ -325,7 +388,7 @@ public class RosettaCollection {
    *     RosettaLanguage object that's in the collection.
    */
   @NotNull
-  public RosettaLanguage removeLanguage(@NotNull String id) {
+  public RosettaLanguage<?, ?> removeLanguage(@NotNull String id) {
 
     String idLower = id.toLowerCase();
     if (!languages.containsKey(idLower)) {
@@ -342,7 +405,7 @@ public class RosettaCollection {
    *     RosettaCollection#hasLanguage(String)} to see if a RosettaLanguage is registered with the
    *     ID before invoking this method.
    */
-  public RosettaLanguage getLanguage(@NotNull String id) {
+  public RosettaLanguage<?, ?> getLanguage(@NotNull String id) {
 
     String idLower = id.toLowerCase();
     if (!languages.containsKey(idLower)) {
@@ -356,7 +419,7 @@ public class RosettaCollection {
    * @param lang The RosettaLanguage to test.
    * @return True if the RosettaLanguage is registered.
    */
-  public boolean hasLanguage(@NotNull RosettaLanguage lang) {
+  public boolean hasLanguage(@NotNull RosettaLanguage<?, ?> lang) {
     return hasLanguage(lang.getID());
   }
 

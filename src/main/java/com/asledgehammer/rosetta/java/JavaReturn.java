@@ -57,7 +57,10 @@ public class JavaReturn extends RosettaObject implements Notable {
   }
 
   @NotNull
-  protected Map<String, Object> onSave(@NotNull ClassReference reference, @NotNull Class<?> deCl) {
+  protected Map<String, Object> onSave(
+      @NotNull JavaSerializeInstance serialize,
+      @NotNull ClassReference reference,
+      @NotNull Class<?> deCl) {
     final Map<String, Object> raw = new HashMap<>();
 
     if (hasNotes()) {

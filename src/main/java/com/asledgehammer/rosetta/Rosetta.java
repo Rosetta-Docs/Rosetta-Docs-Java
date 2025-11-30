@@ -10,7 +10,6 @@ import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
-import org.snakeyaml.engine.v2.common.ScalarStyle;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +25,7 @@ public class Rosetta {
   private static final Dump DEFAULT_DUMP;
 
   private static final Map<String, Class<? extends RosettaApplication>> APPLICATIONS;
-  private static final Map<String, Class<? extends RosettaLanguage>> LANGUAGES;
+  private static final Map<String, Class<? extends RosettaLanguage<?, ?>>> LANGUAGES;
 
   static {
     LoadSettings loadSettings = LoadSettings.builder().build();
@@ -72,7 +71,7 @@ public class Rosetta {
    * @throws NullPointerException If the ID or type are null.
    */
   public static void registerLanguage(
-      @NotNull String id, @NotNull Class<? extends RosettaLanguage> type) {
+      @NotNull String id, @NotNull Class<? extends RosettaLanguage<?, ?>> type) {
     String idLower = id.toLowerCase();
     if (LANGUAGES.containsKey(idLower)) {
       System.out.println(
@@ -105,7 +104,7 @@ public class Rosetta {
    * @throws UnsupportedLanguageException If the language ID is unrecognized.
    */
   @NotNull
-  public static RosettaLanguage createLanguage(@NotNull String id) {
+  public static RosettaLanguage<?, ?> createLanguage(@NotNull String id) {
     return createLanguage(id, RosettaLanguage.class);
   }
 
@@ -155,7 +154,7 @@ public class Rosetta {
    */
   @NotNull
   @SuppressWarnings({"unchecked", "unused"})
-  public static <E extends RosettaLanguage> E createLanguage(
+  public static <E extends RosettaLanguage<?, ?>> E createLanguage(
       @NotNull String id, @NotNull Class<E> type) {
 
     String idLower = id.toLowerCase();
@@ -180,9 +179,13 @@ public class Rosetta {
   }
 
   @NotNull
-  public static RosettaCollection load(@NotNull File file) throws IOException {
+  public static RosettaCollection load(
+      @NotNull TriConsumer<String, RosettaApplication, Map<String, Object>> applicationCallback,
+      @NotNull TriConsumer<String, RosettaLanguage<?, ?>, Map<String, Object>> languageCallback,
+      @NotNull File file)
+      throws IOException {
     RosettaCollection collection = new RosettaCollection();
-    collection.load(file);
+    collection.load(applicationCallback, languageCallback, file);
     return collection;
   }
 

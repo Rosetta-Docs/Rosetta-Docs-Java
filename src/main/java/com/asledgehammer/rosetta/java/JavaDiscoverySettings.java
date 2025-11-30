@@ -3,46 +3,45 @@ package com.asledgehammer.rosetta.java;
 import com.asledgehammer.rosetta.exception.ReadOnlyException;
 import org.jetbrains.annotations.NotNull;
 
-public final class JavaExposureSettings {
-
+public class JavaDiscoverySettings {
   @NotNull private SuperPolicy superPolicy = SuperPolicy.IGNORE;
   private boolean exposeMethods = true;
   private boolean exposeFields = true;
   private boolean exposeConstructors = true;
   private boolean readOnly = false;
 
-  public JavaExposureSettings() {}
+  public JavaDiscoverySettings() {}
 
   @NotNull
-  public JavaExposureSettings setSuperPolicy(@NotNull SuperPolicy superPolicy) {
+  public JavaDiscoverySettings setSuperPolicy(@NotNull SuperPolicy superPolicy) {
     checkReadOnlyStatus();
     this.superPolicy = superPolicy;
     return this;
   }
 
   @NotNull
-  public JavaExposureSettings setExposeFields(boolean exposeFields) {
+  public JavaDiscoverySettings setExposeFields(boolean exposeFields) {
     checkReadOnlyStatus();
     this.exposeFields = exposeFields;
     return this;
   }
 
   @NotNull
-  public JavaExposureSettings setExposeConstructors(boolean exposeConstructors) {
+  public JavaDiscoverySettings setExposeConstructors(boolean exposeConstructors) {
     checkReadOnlyStatus();
     this.exposeConstructors = exposeConstructors;
     return this;
   }
 
   @NotNull
-  public JavaExposureSettings setExposeMethods(boolean exposeMethods) {
+  public JavaDiscoverySettings setExposeMethods(boolean exposeMethods) {
     checkReadOnlyStatus();
     this.exposeMethods = exposeMethods;
     return this;
   }
 
   @NotNull
-  public JavaExposureSettings build() {
+  public JavaDiscoverySettings build() {
     checkReadOnlyStatus();
     this.readOnly = true;
     return this;
@@ -77,6 +76,6 @@ public final class JavaExposureSettings {
 
   public enum SuperPolicy {
     EXPOSE,
-    IGNORE;
+    IGNORE
   }
 }

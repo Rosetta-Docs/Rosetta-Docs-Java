@@ -14,12 +14,218 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.*;
 import java.util.*;
 
-public class JavaLanguage implements RosettaLanguage {
+public class JavaLanguage
+    implements RosettaLanguage<JavaSerializeSettings, JavaDeserializeSettings> {
 
   final Map<String, JavaClass> classes = new HashMap<>();
   final Map<String, JavaPackage> packages = new HashMap<>();
 
   public JavaLanguage() {}
+
+  @NotNull
+  public JavaPackage of(@NotNull Package pkg) {
+
+    String path = pkg.getName();
+    if (packages.containsKey(path)) {
+      return packages.get(path);
+    }
+
+    JavaPackage parent = null;
+    if (path.contains(".")) {
+      // Recursively resolve upward the parent & link to the base package object.
+      String[] split = path.split("\\.");
+      if (split.length == 2) {
+        Package pkgParent = JavaPackage.resolve(split[0]);
+        if (pkgParent != null) {
+          parent = of(pkgParent);
+        } else {
+          parent = ofInternalPackage(split[0]);
+        }
+      } else {
+        StringBuilder join = new StringBuilder(split[0]);
+        for (int i = 1; i < split.length - 1; i++) {
+          join.append(".").append(split[i]);
+        }
+        Package pkgParent = JavaPackage.resolve(join.toString());
+        if (pkgParent != null) {
+          parent = of(pkgParent);
+        } else {
+          parent = ofInternalPackage(join.toString());
+        }
+      }
+    }
+
+    // Create & cache the package definition.
+    JavaPackage javaPackage = new JavaPackage(this, parent, pkg);
+    packages.put(path, javaPackage);
+
+    return javaPackage;
+  }
+
+  @NotNull
+  private JavaPackage ofInternalPackage(@NotNull String path) {
+
+    if (this.packages.containsKey(path)) {
+      return this.packages.get(path);
+    }
+
+    JavaPackage parent = null;
+    String name;
+    if (path.contains(".")) {
+      String[] split = path.split("\\.");
+      name = split[split.length - 1];
+
+      if (split.length == 2) {
+        Package pkgParent = JavaPackage.resolve(split[0]);
+        if (pkgParent != null) {
+          parent = of(pkgParent);
+        } else {
+          parent = ofInternalPackage(split[0]);
+        }
+      } else {
+        StringBuilder join = new StringBuilder(split[0]);
+        for (int i = 1; i < split.length - 1; i++) {
+          join.append(".").append(split[i]);
+        }
+        Package pkgParent = JavaPackage.resolve(join.toString());
+        if (pkgParent != null) {
+          parent = of(pkgParent);
+        } else {
+          parent = ofInternalPackage(join.toString());
+        }
+      }
+    } else {
+      name = path;
+    }
+
+    JavaPackage javaPackage = new JavaPackage(this, parent, name);
+    this.packages.put(name, javaPackage);
+    return javaPackage;
+  }
+
+  @NotNull
+  public JavaClass of(@NotNull JavaDiscoverySettings settings, @NotNull Class<?> clazz) {
+
+    String qualifiedPath = clazz.getName();
+    if (classes.containsKey(qualifiedPath)) {
+      return classes.get(qualifiedPath);
+    }
+
+    // Create & cache the class definition.
+    JavaPackage javaPackage = of(clazz.getPackage());
+    JavaClass javaClass = new JavaClass(javaPackage, clazz);
+
+    classes.put(qualifiedPath, javaClass);
+
+    // IMPORTANT: Discover post-constructor to prevent null-referencing if self-referencing on
+    // discovery.
+    javaClass.discover(settings, clazz, this);
+
+    // If the class is enclosed, reference the class in there instead of the package to properly
+    // reflect its path.
+    Class<?> clazzEnclosing = clazz.getEnclosingClass();
+    if (clazzEnclosing != null) {
+      of(settings, clazzEnclosing).addClass(javaClass);
+    } else {
+      javaPackage.addClass(javaClass);
+    }
+
+    return javaClass;
+  }
+
+  @NotNull
+  public JavaMethod of(@NotNull JavaDiscoverySettings settings, @NotNull Method method) {
+    return of(settings, method.getDeclaringClass()).getMethod(method);
+  }
+
+  @Override
+  @SuppressWarnings({"unchecked"})
+  public void onLoad(
+      @NotNull JavaDeserializeSettings settings,
+      @NotNull String id,
+      @NotNull Map<String, Object> raw) {
+
+    // No Java packages? Return.
+    if (!raw.containsKey("packages")) return;
+
+    final Object oPackages = raw.get("packages");
+    if (!(oPackages instanceof Map)) {
+      throw new RosettaException("The property \"languages.java.packages\" is not a dictionary.");
+    }
+    final Map<String, Object> packages = (Map<String, Object>) oPackages;
+
+    final List<String> keys = new ArrayList<>(packages.keySet());
+    keys.sort(Comparator.naturalOrder());
+    for (String key : keys) {
+      final Object oPackage = packages.get(key);
+      if (!(oPackage instanceof Map)) {
+        throw new RosettaException(
+            "The property \"languages.java.packages." + key + "\" is not a dictionary.");
+      }
+      JavaPackage javaPackage = new JavaPackage(this, null, key, (Map<String, Object>) oPackage);
+      packages.put(javaPackage.getName(), javaPackage);
+    }
+  }
+
+  private void onSavePackageInternal(
+      @NotNull JavaSerializeInstance serialize,
+      @NotNull Map<String, Object> raw,
+      @NotNull JavaPackage javaPackage) {
+
+    // Only save packages that contains contents.
+    if (javaPackage.canSave()) {
+      raw.put(javaPackage.getPath(), javaPackage.onSave(false, serialize));
+    }
+
+    // Use this to flatten packages to prevent unnecessary nesting.
+    if (javaPackage.hasPackages()) {
+      Map<String, JavaPackage> packages = javaPackage.getPackages();
+      List<String> keys = new ArrayList<>(packages.keySet());
+      keys.sort(Comparator.naturalOrder());
+      for (String key : keys) {
+        onSavePackageInternal(serialize, raw, packages.get(key));
+      }
+    }
+  }
+
+  @NotNull
+  @Override
+  public Map<String, Object> onSave(@NotNull JavaSerializeSettings settings, @NotNull String id) {
+
+    final JavaSerializeInstance serialize = new JavaSerializeInstance(settings, id);
+    final Map<String, Object> raw = new HashMap<>();
+
+    if (hasPackages()) {
+      final Map<String, Object> packages = new HashMap<>();
+
+      // Go through each package alphanumerically.
+      final List<String> keys = new ArrayList<>(this.packages.keySet());
+      keys.sort(Comparator.naturalOrder());
+
+      for (String key : keys) {
+        final JavaPackage javaPackage = this.packages.get(key);
+        if (!javaPackage.hasParent()) {
+          onSavePackageInternal(serialize, packages, javaPackage);
+        }
+      }
+
+      if (!packages.isEmpty()) {
+        raw.put("packages", packages);
+      }
+    }
+
+    return raw;
+  }
+
+  private boolean hasPackages() {
+    return !this.packages.isEmpty();
+  }
+
+  @NotNull
+  @Override
+  public String getID() {
+    return "java";
+  }
 
   /**
    * Resolves a TypeReference from Rosetta-defined data.
@@ -220,202 +426,5 @@ public class JavaLanguage implements RosettaLanguage {
 
   public static boolean isNative(int modifiers) {
     return Modifier.isNative(modifiers);
-  }
-
-  @NotNull
-  public JavaPackage of(@NotNull Package pkg) {
-
-    String path = pkg.getName();
-    if (packages.containsKey(path)) {
-      return packages.get(path);
-    }
-
-    JavaPackage parent = null;
-    if (path.contains(".")) {
-      // Recursively resolve upward the parent & link to the base package object.
-      String[] split = path.split("\\.");
-      if (split.length == 2) {
-        Package pkgParent = JavaPackage.resolve(split[0]);
-        if (pkgParent != null) {
-          parent = of(pkgParent);
-        } else {
-          parent = ofInternalPackage(split[0]);
-        }
-      } else {
-        StringBuilder join = new StringBuilder(split[0]);
-        for (int i = 1; i < split.length - 1; i++) {
-          join.append(".").append(split[i]);
-        }
-        Package pkgParent = JavaPackage.resolve(join.toString());
-        if (pkgParent != null) {
-          parent = of(pkgParent);
-        } else {
-          parent = ofInternalPackage(join.toString());
-        }
-      }
-    }
-
-    // Create & cache the package definition.
-    JavaPackage javaPackage = new JavaPackage(this, parent, pkg);
-    packages.put(path, javaPackage);
-
-    return javaPackage;
-  }
-
-  private JavaPackage ofInternalPackage(@NotNull String path) {
-
-    if (this.packages.containsKey(path)) {
-      return this.packages.get(path);
-    }
-
-    JavaPackage parent = null;
-    String name;
-    if (path.contains(".")) {
-      String[] split = path.split("\\.");
-      name = split[split.length - 1];
-
-      if (split.length == 2) {
-        Package pkgParent = JavaPackage.resolve(split[0]);
-        if (pkgParent != null) {
-          parent = of(pkgParent);
-        } else {
-          parent = ofInternalPackage(split[0]);
-        }
-      } else {
-        StringBuilder join = new StringBuilder(split[0]);
-        for (int i = 1; i < split.length - 1; i++) {
-          join.append(".").append(split[i]);
-        }
-        Package pkgParent = JavaPackage.resolve(join.toString());
-        if (pkgParent != null) {
-          parent = of(pkgParent);
-        } else {
-          parent = ofInternalPackage(join.toString());
-        }
-      }
-    } else {
-      name = path;
-    }
-
-    JavaPackage javaPackage = new JavaPackage(this, parent, name);
-    this.packages.put(name, javaPackage);
-    return javaPackage;
-  }
-
-  @NotNull
-  public JavaClass of(@NotNull Class<?> clazz, @NotNull JavaExposureSettings settings) {
-
-    String qualifiedPath = clazz.getName();
-    if (classes.containsKey(qualifiedPath)) {
-      return classes.get(qualifiedPath);
-    }
-
-    // Create & cache the class definition.
-    JavaPackage javaPackage = of(clazz.getPackage());
-    JavaClass javaClass = new JavaClass(javaPackage, clazz);
-
-    classes.put(qualifiedPath, javaClass);
-
-    // IMPORTANT: Discover post-constructor to prevent null-referencing if self-referencing on
-    // discovery.
-    javaClass.discover(clazz, this, settings);
-
-    // If the class is enclosed, reference the class in there instead of the package to properly
-    // reflect its path.
-    Class<?> clazzEnclosing = clazz.getEnclosingClass();
-    if (clazzEnclosing != null) {
-      of(clazzEnclosing, settings).addClass(javaClass);
-    } else {
-      javaPackage.addClass(javaClass);
-    }
-
-    return javaClass;
-  }
-
-  @NotNull
-  public JavaMethod of(@NotNull Method method, @NotNull JavaExposureSettings settings) {
-    return of(method.getDeclaringClass(), settings).getMethod(method);
-  }
-
-  @Override
-  @SuppressWarnings({"unchecked"})
-  public void onLoad(@NotNull Map<String, Object> raw) {
-
-    // No Java packages? Return.
-    if (!raw.containsKey("packages")) return;
-
-    final Object oPackages = raw.get("packages");
-    if (!(oPackages instanceof Map)) {
-      throw new RosettaException("The property \"languages.java.packages\" is not a dictionary.");
-    }
-    final Map<String, Object> packages = (Map<String, Object>) oPackages;
-
-    final List<String> keys = new ArrayList<>(packages.keySet());
-    keys.sort(Comparator.naturalOrder());
-    for (String key : keys) {
-      final Object oPackage = packages.get(key);
-      if (!(oPackage instanceof Map)) {
-        throw new RosettaException(
-            "The property \"languages.java.packages." + key + "\" is not a dictionary.");
-      }
-      JavaPackage javaPackage = new JavaPackage(this, null, key, (Map<String, Object>) oPackage);
-      packages.put(javaPackage.getName(), javaPackage);
-    }
-  }
-
-  private void onSavePackageInternal(
-      @NotNull Map<String, Object> raw, @NotNull JavaPackage javaPackage) {
-
-    // Only save packages that contains contents.
-    if (javaPackage.canSave()) {
-      raw.put(javaPackage.getPath(), javaPackage.onSave(false));
-    }
-
-    // Use this to flatten packages to prevent unnecessary nesting.
-    if (javaPackage.hasPackages()) {
-      Map<String, JavaPackage> packages = javaPackage.getPackages();
-      List<String> keys = new ArrayList<>(packages.keySet());
-      keys.sort(Comparator.naturalOrder());
-      for (String key : keys) {
-        onSavePackageInternal(raw, packages.get(key));
-      }
-    }
-  }
-
-  @NotNull
-  @Override
-  public Map<String, Object> onSave() {
-    final Map<String, Object> raw = new HashMap<>();
-
-    if (hasPackages()) {
-      final Map<String, Object> packages = new HashMap<>();
-
-      // Go through each package alphanumerically.
-      final List<String> keys = new ArrayList<>(this.packages.keySet());
-      keys.sort(Comparator.naturalOrder());
-
-      for (String key : keys) {
-        final JavaPackage javaPackage = this.packages.get(key);
-        if (!javaPackage.hasParent()) {
-          onSavePackageInternal(packages, javaPackage);
-        }
-      }
-
-      if (!packages.isEmpty()) {
-        raw.put("packages", packages);
-      }
-    }
-
-    return raw;
-  }
-
-  private boolean hasPackages() {
-    return !this.packages.isEmpty();
-  }
-
-  @NotNull
-  @Override
-  public String getID() {
-    return "java";
   }
 }

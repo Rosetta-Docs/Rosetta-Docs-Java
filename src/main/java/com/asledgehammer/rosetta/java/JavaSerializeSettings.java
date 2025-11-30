@@ -1,9 +1,10 @@
 package com.asledgehammer.rosetta.java;
 
+import com.asledgehammer.rosetta.RosettaSerializeSettings;
 import com.asledgehammer.rosetta.exception.ReadOnlyException;
 import org.jetbrains.annotations.NotNull;
 
-public class JavaSerializeSettings {
+public class JavaSerializeSettings implements RosettaSerializeSettings {
 
   private boolean readOnly = false;
 

@@ -9,9 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Method;
 import java.util.*;
 
-/**
- *
- */
+/** */
 public class JavaMethod extends JavaExecutable<Method> implements Taggable {
 
   @Nullable private JavaReturn returns;
@@ -50,16 +48,19 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
   }
 
   @NotNull
-  protected Map<String, Object> onSave(@NotNull ClassReference reference) {
+  protected Map<String, Object> onSave(
+      @NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference) {
 
     // Save the general executable definitions info first.
-    Map<String, Object> raw = super.onSave(reference);
+    Map<String, Object> raw = super.onSave(serialize, reference);
 
     raw.put("name", getName());
 
     // Save the returns definition if qualified.
     if (returns != null && returns.shouldSave()) {
-      raw.put("return", returns.onSave(reference, getReflectionTarget().getDeclaringClass()));
+      raw.put(
+          "return",
+          returns.onSave(serialize, reference, getReflectionTarget().getDeclaringClass()));
     }
 
     if (hasTags()) {

@@ -85,6 +85,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     this.signature = createSignature(this);
   }
 
+  @SuppressWarnings({"unchecked"})
   protected void onLoad(@NotNull Map<String, Object> raw) {
     // Load parameters. (If present)
     if (raw.containsKey("parameters")) {
@@ -119,7 +120,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
   }
 
   @NotNull
-  protected Map<String, Object> onSave(@NotNull ClassReference reference) {
+  protected Map<String, Object> onSave(@NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference) {
     Map<String, Object> raw = new HashMap<>();
 
     final Class<?> deCl = getReflectionTarget().getDeclaringClass();
@@ -135,7 +136,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     if (hasTypeParameters()) {
       final List<Map<String, Object>> typeParameters = new ArrayList<>();
       for (JavaTypeParameter parameter : this.typeParameters) {
-        typeParameters.add(parameter.onSave(reference, deCl));
+        typeParameters.add(parameter.onSave(serialize, reference, deCl));
       }
       raw.put("type_parameters", typeParameters);
     }
@@ -143,7 +144,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     if (hasParameters()) {
       final List<Map<String, Object>> parameters = new ArrayList<>();
       for (JavaParameter javaParameter : this.parameters) {
-        parameters.add(javaParameter.onSave(reference, deCl));
+        parameters.add(javaParameter.onSave(serialize, reference, deCl));
       }
       raw.put("parameters", parameters);
     }

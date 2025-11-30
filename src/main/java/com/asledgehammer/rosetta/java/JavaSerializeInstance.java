@@ -1,0 +1,40 @@
+package com.asledgehammer.rosetta.java;
+
+import org.jetbrains.annotations.NotNull;
+
+public class JavaSerializeInstance {
+  @NotNull private final JavaSerializeSettings settings;
+  @NotNull private final String id;
+
+  private JavaTypeDictionary typeDictionary;
+
+  JavaSerializeInstance(@NotNull JavaSerializeSettings settings, @NotNull String id) {
+    this.id = id;
+    this.settings = settings;
+    if (settings.isRenderTypesAsDictionary()) {
+      this.typeDictionary = new JavaTypeDictionary(id);
+    }
+  }
+
+  @NotNull
+  public JavaTypeDictionary getTypeDictionary() {
+    if (!hasTypeDictionary()) {
+      throw new RuntimeException("TypeDictionary is null.");
+    }
+    return this.typeDictionary;
+  }
+
+  @NotNull
+  public JavaSerializeSettings getSettings() {
+    return this.settings;
+  }
+
+  @NotNull
+  public String getId() {
+    return this.id;
+  }
+
+  public boolean hasTypeDictionary() {
+    return this.typeDictionary != null;
+  }
+}

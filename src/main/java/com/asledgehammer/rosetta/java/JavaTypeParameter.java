@@ -35,7 +35,7 @@ public class JavaTypeParameter {
   }
 
   @NotNull
-  public Map<String, Object> onSave(@NotNull ClassReference reference, @NotNull Class<?> deCl) {
+  public Map<String, Object> onSave(@NotNull JavaSerializeInstance serialize, @NotNull ClassReference reference, @NotNull Class<?> deCl) {
     Map<String, Object> raw = new HashMap<>();
 
     raw.put("type", JavaLanguage.serializeType(type, reference, deCl));

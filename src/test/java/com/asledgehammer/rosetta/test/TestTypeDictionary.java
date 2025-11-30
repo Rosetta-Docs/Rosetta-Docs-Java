@@ -3,12 +3,11 @@ package com.asledgehammer.rosetta.test;
 import com.asledgehammer.rosetta.Rosetta;
 import com.asledgehammer.rosetta.RosettaCollection;
 import com.asledgehammer.rosetta.java.*;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-public class TestSimple {
+public class TestTypeDictionary {
 
   static class MyArrayList extends ArrayList<String> {}
 
@@ -25,6 +24,7 @@ public class TestSimple {
     collection.addLanguage(language);
 
     final JavaSerializeSettings javaSerializeSettings = new JavaSerializeSettings();
+    javaSerializeSettings.setRenderTypesAsDictionary(true);
 
     String yaml =
         collection.save(

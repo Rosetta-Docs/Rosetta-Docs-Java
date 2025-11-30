@@ -145,7 +145,7 @@ public class JavaPackage extends RosettaObject
   }
 
   @NotNull
-  protected Map<String, Object> onSave(boolean deep) {
+  protected Map<String, Object> onSave(boolean deep, @NotNull JavaSerializeInstance serialize) {
     final Map<String, Object> raw = new HashMap<>();
 
     if (hasNotes()) {
@@ -165,7 +165,7 @@ public class JavaPackage extends RosettaObject
 
       for (String key : keys) {
         JavaPackage javaPackage = this.packages.get(key);
-        packages.put(key, javaPackage.onSave(deep));
+        packages.put(key, javaPackage.onSave(deep, serialize));
       }
 
       raw.put("packages", packages);
@@ -180,7 +180,7 @@ public class JavaPackage extends RosettaObject
 
       for (String key : keys) {
         JavaClass javaClass = this.classes.get(key);
-        classes.put(key, javaClass.onSave());
+        classes.put(key, javaClass.onSave(serialize));
       }
 
       raw.put("classes", classes);
