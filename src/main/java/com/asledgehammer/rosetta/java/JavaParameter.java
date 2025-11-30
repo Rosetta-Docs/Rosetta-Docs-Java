@@ -1,20 +1,19 @@
 package com.asledgehammer.rosetta.java;
 
+import com.asledgehammer.rosetta.NamedEntity;
 import com.asledgehammer.rosetta.Notable;
+import com.asledgehammer.rosetta.RosettaObject;
 import com.asledgehammer.rosetta.exception.MissingKeyException;
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
-import com.asledgehammer.rosetta.NamedEntity;
-import com.asledgehammer.rosetta.RosettaObject;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class JavaParameter extends RosettaObject
     implements JavaTyped, NamedEntity, Notable, Reflected<Parameter> {
@@ -34,12 +33,10 @@ public class JavaParameter extends RosettaObject
 
   public JavaParameter(@NotNull Parameter parameter) {
     super();
-    //    System.out.println("new JavaParameter(parameter = " + parameter + ")");
     this.target = parameter;
     this.name = parameter.getName();
     this.type = TypeReference.of(parameter.getParameterizedType());
     this.nullable = !this.type.isPrimitive();
-    this.setDirty();
   }
 
   public JavaParameter(@NotNull Map<String, Object> raw) {
@@ -130,7 +127,6 @@ public class JavaParameter extends RosettaObject
     if (Objects.equals(this.name, name)) return;
 
     this.name = name;
-    setDirty();
   }
 
   @NotNull
@@ -160,16 +156,7 @@ public class JavaParameter extends RosettaObject
 
   @Override
   public void setNotes(@Nullable String notes) {
-    notes = notes == null || notes.isEmpty() ? null : notes;
-
-    // Catch redundant changes to not set dirty flag.
-    if (this.notes == null) {
-      if (notes == null) return;
-    } else if (this.notes.equals(notes)) return;
-
-    this.notes = notes;
-
-    setDirty();
+    this.notes = notes == null || notes.isEmpty() ? null : notes;
   }
 
   public boolean isNullable() {

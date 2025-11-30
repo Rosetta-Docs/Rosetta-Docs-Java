@@ -9,10 +9,9 @@ import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.SimpleTypeReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
 import com.asledgehammer.rosetta.java.reference.UnionTypeReference;
-import org.jetbrains.annotations.NotNull;
-
 import java.lang.reflect.*;
 import java.util.*;
+import org.jetbrains.annotations.NotNull;
 
 public class JavaLanguage
     implements RosettaLanguage<JavaSerializeSettings, JavaDeserializeSettings> {

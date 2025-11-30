@@ -2,11 +2,10 @@ package com.asledgehammer.rosetta.java;
 
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class JavaTypeParameter {
 

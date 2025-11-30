@@ -3,13 +3,11 @@ package com.asledgehammer.rosetta.java;
 import com.asledgehammer.rosetta.Taggable;
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
+import java.lang.reflect.Method;
+import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Method;
-import java.util.*;
-
-/** */
 public class JavaMethod extends JavaExecutable<Method> implements Taggable {
 
   @Nullable private JavaReturn returns;
@@ -70,22 +68,6 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
     return raw;
   }
 
-  @Override
-  public boolean onCompile() {
-
-    // Invoke super-compile code and then handle return property.
-    if (!super.onCompile()) {
-      return false;
-    }
-
-    // Handle compiling the return property.
-    if (returns != null && returns.isDirty()) {
-      return returns.compile();
-    }
-
-    return true;
-  }
-
   @Nullable
   public JavaReturn getReturns() {
     return this.returns;
@@ -101,7 +83,6 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
     }
 
     this.returns = returns;
-    this.setDirty();
   }
 
   @Override
@@ -137,7 +118,6 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
       throw new IllegalArgumentException("The tag is already applied: " + tag);
     }
     this.tags.add(tag);
-    setDirty();
   }
 
   @Override
@@ -149,7 +129,6 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
       throw new IllegalArgumentException("The tag is not applied: " + tag);
     }
     tags.remove(tag);
-    setDirty();
   }
 
   @NotNull

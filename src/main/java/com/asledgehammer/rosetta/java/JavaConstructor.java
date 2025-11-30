@@ -2,9 +2,7 @@ package com.asledgehammer.rosetta.java;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;
-
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class JavaConstructor extends JavaExecutable<Constructor<?>> {
 

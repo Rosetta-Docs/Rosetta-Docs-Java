@@ -3,7 +3,6 @@ package com.asledgehammer.rosetta.java.reference;
 import java.util.ArrayList;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class SimpleTypeReference extends TypeReference {
 

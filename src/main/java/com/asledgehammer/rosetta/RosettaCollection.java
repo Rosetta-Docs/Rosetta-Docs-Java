@@ -1,11 +1,10 @@
 package com.asledgehammer.rosetta;
 
 import com.asledgehammer.rosetta.exception.RosettaException;
+import com.asledgehammer.rosetta.exception.ValueTypeException;
 import java.io.*;
 import java.util.*;
 import java.util.function.BiFunction;
-
-import com.asledgehammer.rosetta.exception.ValueTypeException;
 import org.jetbrains.annotations.NotNull;
 import org.snakeyaml.engine.v2.api.Dump;
 import org.snakeyaml.engine.v2.api.Load;

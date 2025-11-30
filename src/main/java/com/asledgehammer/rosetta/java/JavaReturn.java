@@ -1,24 +1,21 @@
 package com.asledgehammer.rosetta.java;
 
 import com.asledgehammer.rosetta.Notable;
+import com.asledgehammer.rosetta.RosettaObject;
 import com.asledgehammer.rosetta.exception.MissingKeyException;
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
-import com.asledgehammer.rosetta.RosettaObject;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class JavaReturn extends RosettaObject implements Notable {
 
   private TypeReference type;
-
   private String notes;
-
   private boolean nullable;
 
   public JavaReturn(@NotNull Type type) {
@@ -72,7 +69,8 @@ public class JavaReturn extends RosettaObject implements Notable {
     }
 
     if (serialize.hasTypeDictionary()) {
-      raw.put("type", serialize.getTypeDictionary().register(serialize, getType(), reference, deCl));
+      raw.put(
+          "type", serialize.getTypeDictionary().register(serialize, getType(), reference, deCl));
     } else {
       raw.put("type", JavaLanguage.serializeType(serialize, getType(), reference, deCl));
     }
@@ -87,7 +85,6 @@ public class JavaReturn extends RosettaObject implements Notable {
 
   public void setType(@NotNull TypeReference type) {
     this.type = type;
-    setDirty();
   }
 
   @Override
@@ -106,16 +103,7 @@ public class JavaReturn extends RosettaObject implements Notable {
 
   @Override
   public void setNotes(@Nullable String notes) {
-    notes = notes == null || notes.isEmpty() ? null : notes;
-
-    // Catch redundant changes to not set dirty flag.
-    if (this.notes == null) {
-      if (notes == null) return;
-    } else if (this.notes.equals(notes)) return;
-
-    this.notes = notes;
-
-    setDirty();
+    this.notes = notes == null || notes.isEmpty() ? null : notes;
   }
 
   public boolean isNullable() {

@@ -9,11 +9,10 @@ import com.asledgehammer.rosetta.exception.MissingKeyException;
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.*;
 import java.util.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class JavaClass extends RosettaObject
     implements NamedEntity, Notable, Reflected<Class<?>>, Taggable {
@@ -33,7 +32,7 @@ public class JavaClass extends RosettaObject
   private String deprecated;
 
   @Nullable private TypeReference extendz;
-  private List<TypeReference> implementz = new ArrayList<>();
+  private final List<TypeReference> implementz = new ArrayList<>();
 
   private JavaScope scope;
   private boolean isStatic;
@@ -165,50 +164,6 @@ public class JavaClass extends RosettaObject
           methods.computeIfAbsent(name, JavaExecutableCollection::new);
       collection.addExecutable(javaMethod);
     }
-  }
-
-  @Override
-  public boolean onCompile() {
-
-    // Compile field(s).
-    if (!fields.isEmpty()) {
-      for (JavaField field : fields.values()) {
-        if (field.isDirty()) {
-          // Fail compilation if field fails to compile.
-          if (!field.compile()) {
-            return false;
-          }
-        }
-      }
-    }
-
-    // Compile method(s).
-    if (!methods.isEmpty()) {
-      for (JavaExecutableCollection<JavaMethod> methodList : methods.values()) {
-        for (JavaMethod method : methodList.getExecutables()) {
-          if (method.isDirty()) {
-            // Fail compilation if method fails to compile.
-            if (!method.compile()) {
-              return false;
-            }
-          }
-        }
-      }
-    }
-
-    // Compile constructor(s).
-    if (!constructors.isEmpty()) {
-      for (JavaConstructor constructor : constructors.getExecutables()) {
-        if (constructor.isDirty()) {
-          // Fail compilation if constructor fails to compile.
-          if (!constructor.compile()) {
-            return false;
-          }
-        }
-      }
-    }
-
-    return true;
   }
 
   protected void onLoad(
@@ -417,9 +372,13 @@ public class JavaClass extends RosettaObject
       if (serialize.hasTypeDictionary()) {
         raw.put(
             "extends",
-            serialize.getTypeDictionary().register(serialize, this.extendz, targetReference, target));
+            serialize
+                .getTypeDictionary()
+                .register(serialize, this.extendz, targetReference, target));
       } else {
-        raw.put("extends", JavaLanguage.serializeType(serialize, this.extendz, targetReference, target));
+        raw.put(
+            "extends",
+            JavaLanguage.serializeType(serialize, this.extendz, targetReference, target));
       }
     }
 
@@ -570,13 +529,11 @@ public class JavaClass extends RosettaObject
 
   @NotNull
   public List<JavaTypeParameter> getTypeParameters() {
-    if (isDirty()) compile();
     return this.typeParameters;
   }
 
   @NotNull
   public JavaExecutableCollection<JavaConstructor> getConstructors() {
-    if (isDirty()) compile();
     return this.constructors;
   }
 
@@ -586,7 +543,6 @@ public class JavaClass extends RosettaObject
 
   @NotNull
   public Map<String, JavaExecutableCollection<JavaMethod>> getMethods() {
-    if (isDirty()) compile();
     return this.methods;
   }
 
@@ -596,7 +552,6 @@ public class JavaClass extends RosettaObject
 
   @NotNull
   public Map<String, JavaField> getFields() {
-    if (isDirty()) compile();
     return this.fields;
   }
 
@@ -642,16 +597,7 @@ public class JavaClass extends RosettaObject
 
   @Override
   public void setNotes(@Nullable String notes) {
-    notes = notes == null || notes.isEmpty() ? null : notes;
-
-    // Catch redundant changes to not set dirty flag.
-    if (this.notes == null) {
-      if (notes == null) return;
-    } else if (this.notes.equals(notes)) return;
-
-    this.notes = notes;
-
-    setDirty();
+    this.notes = notes == null || notes.isEmpty() ? null : notes;
   }
 
   @Override
@@ -682,7 +628,6 @@ public class JavaClass extends RosettaObject
       throw new IllegalArgumentException("The tag is already applied: " + tag);
     }
     this.tags.add(tag);
-    setDirty();
   }
 
   @Override
@@ -694,7 +639,6 @@ public class JavaClass extends RosettaObject
       throw new IllegalArgumentException("The tag is not applied: " + tag);
     }
     tags.remove(tag);
-    setDirty();
   }
 
   @NotNull

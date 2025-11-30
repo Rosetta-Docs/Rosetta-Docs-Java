@@ -3,10 +3,9 @@ package com.asledgehammer.rosetta.test;
 import com.asledgehammer.rosetta.Rosetta;
 import com.asledgehammer.rosetta.RosettaCollection;
 import com.asledgehammer.rosetta.java.*;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 public class TestSimple {
 

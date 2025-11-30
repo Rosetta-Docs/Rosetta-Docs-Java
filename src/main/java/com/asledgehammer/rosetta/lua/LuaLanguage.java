@@ -1,9 +1,8 @@
 package com.asledgehammer.rosetta.lua;
 
 import com.asledgehammer.rosetta.RosettaLanguage;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 
 public class LuaLanguage implements RosettaLanguage<LuaSerializeSettings, LuaDeserializeSettings> {
 

@@ -54,6 +54,6 @@ public class JavaSerializeSettings implements RosettaSerializeSettings {
   public enum FullTypeRenderSettings {
     ALWAYS,
     NEVER,
-    ONLY_WITH_MODIFIERS;
+    ONLY_WITH_MODIFIERS
   }
 }

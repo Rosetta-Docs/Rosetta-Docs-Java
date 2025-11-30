@@ -14,7 +14,7 @@ public class UnionTypeReference extends TypeReference implements BoundReference 
   private final boolean primitive;
   private final boolean generic;
 
-  private static Map<String, Boolean> MAP_CHECKED_GENERIC = new HashMap<>();
+  private static final Map<String, Boolean> MAP_CHECKED_GENERIC = new HashMap<>();
 
   private static boolean isGeneric(String base) {
     if (MAP_CHECKED_GENERIC.containsKey(base)) {

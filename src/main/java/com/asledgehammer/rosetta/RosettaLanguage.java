@@ -1,8 +1,7 @@
 package com.asledgehammer.rosetta;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * RosettaLanguage handles the loading, storing, and serialization of language-level definitions in

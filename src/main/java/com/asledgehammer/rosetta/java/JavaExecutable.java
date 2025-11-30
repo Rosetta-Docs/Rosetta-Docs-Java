@@ -1,24 +1,22 @@
 package com.asledgehammer.rosetta.java;
 
-import com.asledgehammer.rosetta.DirtySupported;
 import com.asledgehammer.rosetta.NamedEntity;
 import com.asledgehammer.rosetta.Notable;
 import com.asledgehammer.rosetta.RosettaObject;
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @param <E> The type of {@link Executable} ({@link Method} or {@link Constructor})
  */
 public abstract class JavaExecutable<E extends Executable> extends RosettaObject
-    implements DirtySupported, NamedEntity, Notable, Reflected<E> {
+    implements NamedEntity, Notable, Reflected<E> {
 
   /** Used to validate method names passed from serialized files. */
   private static final Pattern REGEX_EXECUTABLE_NAME =
@@ -35,15 +33,6 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
   private JavaScope scope;
 
   private String notes;
-
-  /** Defaults to true to compile first-time. */
-  private boolean dirty = true;
-
-  /**
-   * Compiled when dirty to keep properties clean and forcefully runs through getter/setters for the
-   * record.
-   */
-  private List<JavaParameter> parametersReadOnly = DEFAULT_EMPTY_LIST;
 
   private final E target;
 
@@ -171,54 +160,6 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     return raw;
   }
 
-  @Override
-  public boolean onCompile() {
-
-    // Compile read-only list.
-    if (this.hasParameters()) {
-
-      // If any parameter is dirty, also compile.
-      for (JavaParameter parameter : parameters) {
-        if (parameter.isDirty()) {
-
-          // Fail compilation if the parameter fails.
-          if (!parameter.compile()) {
-            return false;
-          }
-        }
-      }
-
-      this.parametersReadOnly = Collections.unmodifiableList(this.parameters);
-    } else {
-      this.parametersReadOnly = DEFAULT_EMPTY_LIST;
-    }
-
-    return true;
-  }
-
-  @Override
-  public boolean isDirty() {
-
-    // Normal dirty-flag check.
-    if (this.dirty) return true;
-
-    // Check parameter(s) for dirty flag.
-    for (JavaParameter parameter : getParameters()) {
-      if (parameter.isDirty()) {
-        return true;
-      }
-    }
-
-    // Methods will need to implement this by a super-call AND check return definition.
-
-    return false;
-  }
-
-  @Override
-  public void setDirty(boolean flag) {
-    this.dirty = flag;
-  }
-
   /**
    * @return True if the executable has no parameter definitions.
    */
@@ -230,20 +171,9 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     return !this.typeParameters.isEmpty();
   }
 
-  /**
-   * @return A read-only list of registered parameters for the executable definition.
-   */
   @NotNull
   public List<JavaParameter> getParameters() {
-
-    // Check to see if any parameter(s) were modified or added / removed to the executable. If so,
-    // recompile to rebuild the list we return.
-    if (isDirty()) {
-      compile();
-    }
-
-    // Return the read-only list to prevent unintentional data-poisoning.
-    return this.parametersReadOnly;
+    return this.parameters;
   }
 
   /**
@@ -282,16 +212,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
 
   @Override
   public void setNotes(@Nullable String notes) {
-    notes = notes == null || notes.isEmpty() ? null : notes;
-
-    // Catch redundant changes to not set dirty flag.
-    if (this.notes == null) {
-      if (notes == null) return;
-    } else if (this.notes.equals(notes)) return;
-
-    this.notes = notes;
-
-    setDirty();
+    this.notes = notes == null || notes.isEmpty() ? null : notes;
   }
 
   /**
@@ -326,7 +247,6 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
       return;
     }
     this.deprecated = deprecated;
-    setDirty();
   }
 
   /**
@@ -338,7 +258,6 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
       return;
     }
     this.deprecated = message;
-    this.setDirty();
   }
 
   /**

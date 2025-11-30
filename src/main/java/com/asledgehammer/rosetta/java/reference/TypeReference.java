@@ -15,7 +15,8 @@ public abstract class TypeReference {
 
   static final List<String> PRIMITIVE_TYPES;
   static final TypeReference OBJECT_TYPE;
-//  static final TypeReference[] OBJECT_TYPE_MAP;
+
+  //  static final TypeReference[] OBJECT_TYPE_MAP;
 
   static {
     PRIMITIVE_TYPES = new ArrayList<>();
@@ -30,7 +31,7 @@ public abstract class TypeReference {
     PRIMITIVE_TYPES.add("long");
 
     OBJECT_TYPE = of(Object.class);
-//    OBJECT_TYPE_MAP = new TypeReference[] {OBJECT_TYPE};
+    //    OBJECT_TYPE_MAP = new TypeReference[] {OBJECT_TYPE};
   }
 
   @Override

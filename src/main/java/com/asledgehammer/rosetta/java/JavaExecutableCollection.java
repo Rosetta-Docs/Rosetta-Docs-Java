@@ -1,22 +1,16 @@
 package com.asledgehammer.rosetta.java;
 
-import com.asledgehammer.rosetta.DirtySupported;
 import com.asledgehammer.rosetta.NamedEntity;
-import org.jetbrains.annotations.NotNull;
-
 import java.lang.reflect.Executable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
-public class JavaExecutableCollection<E extends JavaExecutable<?>>
-    implements DirtySupported, NamedEntity {
+public class JavaExecutableCollection<E extends JavaExecutable<?>> implements NamedEntity {
 
   private final List<E> executables = new ArrayList<>();
   private final String name;
-
-  private boolean dirty;
 
   JavaExecutableCollection(@NotNull String name) {
     if (!JavaExecutable.isValidName(name)) {
@@ -24,24 +18,6 @@ public class JavaExecutableCollection<E extends JavaExecutable<?>>
           "The name is not a valid executable name. (Given: \"" + name + "\")");
     }
     this.name = name;
-  }
-
-  @Override
-  public boolean onCompile() {
-
-    if (executables.isEmpty()) return true;
-
-    for (E executable : executables) {
-      if (executable.isDirty()) {
-        // If one or more executables isn't compiled then halt compilation.
-        if (!executable.compile()) {
-          return false;
-        }
-      }
-    }
-
-    // All executables compiled.
-    return true;
   }
 
   /**
@@ -64,7 +40,6 @@ public class JavaExecutableCollection<E extends JavaExecutable<?>>
               + executable.getSignature());
     }
     executables.add(executable);
-    this.setDirty();
   }
 
   /**
@@ -79,34 +54,14 @@ public class JavaExecutableCollection<E extends JavaExecutable<?>>
               + executable.getSignature());
     }
     executables.remove(executable);
-    this.setDirty();
-  }
-
-  /** Sorts modified lists of executables to stack by signature strings. */
-  public void sort() {
-    // Only sort if the list is modified.
-    if (this.isDirty()) {
-      executables.sort(Comparator.comparing(JavaExecutable::getSignature));
-      this.setDirty(false);
-    }
   }
 
   /**
-   * @return A read-only list of all executable members in the list.
+   * @return A list of all executable members.
    */
   @NotNull
   public List<E> getExecutables() {
     return Collections.unmodifiableList(this.executables);
-  }
-
-  @Override
-  public boolean isDirty() {
-    return this.dirty;
-  }
-
-  @Override
-  public void setDirty(boolean flag) {
-    this.dirty = flag;
   }
 
   @Override

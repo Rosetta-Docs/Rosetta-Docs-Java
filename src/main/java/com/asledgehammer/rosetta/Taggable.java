@@ -1,15 +1,11 @@
 package com.asledgehammer.rosetta;
 
 import com.asledgehammer.rosetta.java.JavaField;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 public interface Taggable {
 
-  /**
-   * @return A read-only collection of applied tags.
-   */
   @NotNull
   List<String> getTags();
 
@@ -46,7 +42,7 @@ public interface Taggable {
   /**
    * Clears all applied tags.
    *
-   * @return A read-only list of the tags removed.
+   * @return A list of the tags removed.
    * @throws RuntimeException If the object has no tags. (Use {@link JavaField#hasTags()})
    */
   @NotNull

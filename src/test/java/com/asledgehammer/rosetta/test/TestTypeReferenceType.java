@@ -2,11 +2,10 @@ package com.asledgehammer.rosetta.test;
 
 import com.asledgehammer.rosetta.java.reference.SimpleTypeReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import org.junit.jupiter.api.Test;
 
 public class TestTypeReferenceType {
 

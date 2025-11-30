@@ -1,14 +1,13 @@
 package com.asledgehammer.rosetta.java;
 
 import com.asledgehammer.rosetta.*;
+import java.util.*;
+import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.regex.Pattern;
-
 public class JavaPackage extends RosettaObject
-    implements DirtySupported, NamedEntity, Notable, Reflected<Package>, Taggable {
+    implements NamedEntity, Notable, Reflected<Package>, Taggable {
 
   /** To test Java package names for validity. */
   private static final Pattern REGEX_PKG_NAME =
@@ -64,10 +63,6 @@ public class JavaPackage extends RosettaObject
   /**
    * Creation constructor used for packages without any classes in them. (Package object passed is
    * null)
-   *
-   * @param lang
-   * @param parent
-   * @param name
    */
   JavaPackage(@NotNull JavaLanguage lang, @Nullable JavaPackage parent, @NotNull String name) {
     super();
@@ -105,38 +100,6 @@ public class JavaPackage extends RosettaObject
     this.target = resolve(this.path);
 
     onLoad(raw);
-  }
-
-  @Override
-  public boolean onCompile() {
-
-    // Compile class(es).
-    if (!classes.isEmpty()) {
-      List<String> keys = new ArrayList<>(classes.keySet());
-      keys.sort(Comparator.naturalOrder());
-
-      for (String key : keys) {
-        JavaClass javaClass = classes.get(key);
-        if (javaClass.isDirty() && !javaClass.compile()) {
-          return false;
-        }
-      }
-    }
-
-    // Compile sub-package(s).
-    if (!packages.isEmpty()) {
-      List<String> keys = new ArrayList<>(packages.keySet());
-      keys.sort(Comparator.naturalOrder());
-
-      for (String key : keys) {
-        JavaPackage javaPackage = packages.get(key);
-        if (javaPackage.isDirty() && !javaPackage.compile()) {
-          return false;
-        }
-      }
-    }
-
-    return true;
   }
 
   protected void onLoad(@NotNull Map<String, Object> raw) {
@@ -371,16 +334,7 @@ public class JavaPackage extends RosettaObject
 
   @Override
   public void setNotes(@Nullable String notes) {
-    notes = notes == null || notes.isEmpty() ? null : notes;
-
-    // Catch redundant changes to not set dirty flag.
-    if (this.notes == null) {
-      if (notes == null) return;
-    } else if (this.notes.equals(notes)) return;
-
-    this.notes = notes;
-
-    setDirty();
+    this.notes = notes == null || notes.isEmpty() ? null : notes;
   }
 
   @Override
@@ -411,7 +365,6 @@ public class JavaPackage extends RosettaObject
       throw new IllegalArgumentException("The tag is already applied: " + tag);
     }
     this.tags.add(tag);
-    setDirty();
   }
 
   @Override
@@ -423,7 +376,6 @@ public class JavaPackage extends RosettaObject
       throw new IllegalArgumentException("The tag is not applied: " + tag);
     }
     tags.remove(tag);
-    setDirty();
   }
 
   @NotNull

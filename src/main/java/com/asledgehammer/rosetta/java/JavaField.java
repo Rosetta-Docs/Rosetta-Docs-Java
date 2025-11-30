@@ -2,19 +2,19 @@ package com.asledgehammer.rosetta.java;
 
 import com.asledgehammer.rosetta.NamedEntity;
 import com.asledgehammer.rosetta.Notable;
+import com.asledgehammer.rosetta.RosettaObject;
+import com.asledgehammer.rosetta.Taggable;
 import com.asledgehammer.rosetta.exception.MissingKeyException;
 import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
-import com.asledgehammer.rosetta.RosettaObject;
+import java.lang.reflect.Field;
+import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
-import java.util.*;
-
 public class JavaField extends RosettaObject
-    implements JavaTyped, NamedEntity, Notable, Reflected<Field> {
+    implements JavaTyped, NamedEntity, Notable, Reflected<Field>, Taggable {
 
   private final Field reflectedObject;
   private final String name;
@@ -213,16 +213,7 @@ public class JavaField extends RosettaObject
 
   @Override
   public void setNotes(@Nullable String notes) {
-    notes = notes == null || notes.isEmpty() ? null : notes;
-
-    // Catch redundant changes to not set dirty flag.
-    if (this.notes == null) {
-      if (notes == null) return;
-    } else if (this.notes.equals(notes)) return;
-
-    this.notes = notes;
-
-    setDirty();
+    this.notes = notes == null || notes.isEmpty() ? null : notes;
   }
 
   /**
@@ -257,7 +248,6 @@ public class JavaField extends RosettaObject
       return;
     }
     this.deprecated = deprecated;
-    setDirty();
   }
 
   /**
@@ -269,7 +259,6 @@ public class JavaField extends RosettaObject
       return;
     }
     this.deprecated = message;
-    this.setDirty();
   }
 
   @Override
@@ -277,27 +266,18 @@ public class JavaField extends RosettaObject
     return "JavaField \"" + getName() + "\"";
   }
 
-  /**
-   * @return True if one or more tags are applied.
-   */
+  @Override
   public boolean hasTags() {
     return !this.tags.isEmpty();
   }
 
-  /**
-   * @return A read-only collection of applied tags.
-   */
   @NotNull
+  @Override
   public List<String> getTags() {
     return Collections.unmodifiableList(tags);
   }
 
-  /**
-   * @param tag The tag to evaluate.
-   * @return True if the tag is registered.
-   * @throws NullPointerException If the tag is null.
-   * @throws IllegalArgumentException If the tag is empty.
-   */
+  @Override
   public boolean hasTag(@NotNull String tag) {
     if (tag.isEmpty()) {
       throw new IllegalArgumentException("The tag is empty.");
@@ -305,13 +285,7 @@ public class JavaField extends RosettaObject
     return this.tags.contains(tag);
   }
 
-  /**
-   * Applies a tag to the object.
-   *
-   * @param tag The tag to apply.
-   * @throws NullPointerException If the tag is null.
-   * @throws IllegalArgumentException If the tag is empty or already applied.
-   */
+  @Override
   public void addTag(@NotNull String tag) {
     if (tag.isEmpty()) {
       throw new IllegalArgumentException("The tag is empty.");
@@ -320,16 +294,9 @@ public class JavaField extends RosettaObject
       throw new IllegalArgumentException("The tag is already applied: " + tag);
     }
     this.tags.add(tag);
-    setDirty();
   }
 
-  /**
-   * Removes a tag from the object.
-   *
-   * @param tag The tag to remove.
-   * @throws NullPointerException If the tag is null.
-   * @throws IllegalArgumentException If the tag is empty or is not applied.
-   */
+  @Override
   public void removeTag(@NotNull String tag) {
     if (tag.isEmpty()) {
       throw new IllegalArgumentException("The tag is empty.");
@@ -338,19 +305,17 @@ public class JavaField extends RosettaObject
       throw new IllegalArgumentException("The tag is not applied: " + tag);
     }
     tags.remove(tag);
-    setDirty();
   }
 
-  /**
-   * Clears all applied tags.
-   *
-   * @throws RuntimeException If the object has no tags. (Use {@link JavaField#hasTags()})
-   */
-  public void clearTags() {
+  @NotNull
+  @Override
+  public List<String> clearTags() {
     if (tags.isEmpty()) {
       throw new RuntimeException("No tags are registered.");
     }
+    List<String> toReturn = new ArrayList<>(tags);
     tags.clear();
+    return toReturn;
   }
 
   public boolean isFinal() {
@@ -360,7 +325,6 @@ public class JavaField extends RosettaObject
   public void setFinal(boolean flag) {
     if (flag == isFinal) return;
     isFinal = flag;
-    setDirty();
   }
 
   public boolean isNative() {
@@ -370,7 +334,6 @@ public class JavaField extends RosettaObject
   public void setNative(boolean flag) {
     if (flag == isNative) return;
     isNative = flag;
-    setDirty();
   }
 
   public boolean isStatic() {
@@ -380,7 +343,6 @@ public class JavaField extends RosettaObject
   public void setStatic(boolean flag) {
     if (flag == isStatic) return;
     isStatic = flag;
-    setDirty();
   }
 
   public boolean isTransient() {
@@ -390,7 +352,6 @@ public class JavaField extends RosettaObject
   public void setTransient(boolean flag) {
     if (flag == isTransient) return;
     isTransient = flag;
-    setDirty();
   }
 
   public boolean isVolatile() {
@@ -400,7 +361,6 @@ public class JavaField extends RosettaObject
   public void setVolatile(boolean flag) {
     if (flag == isVolatile) return;
     isVolatile = flag;
-    setDirty();
   }
 
   public boolean isNullable() {
@@ -410,6 +370,5 @@ public class JavaField extends RosettaObject
   public void setNullable(boolean flag) {
     if (flag == isNullable) return;
     this.isNullable = flag;
-    setDirty();
   }
 }
