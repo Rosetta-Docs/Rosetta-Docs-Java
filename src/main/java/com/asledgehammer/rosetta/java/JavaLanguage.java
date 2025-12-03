@@ -298,7 +298,11 @@ public class JavaLanguage
     if (type instanceof SimpleTypeReference simple) {
 
       // The most simple form of a type. Only serialize the base string.
-      if (!simple.hasSubTypes() && !simple.isGeneric()) {
+      if (!simple.hasSubTypes()
+          && !simple.isGeneric()
+          && !simple.isPrimitive()
+          && !simple.isWildcard()
+          && !simple.isArray()) {
         return type.compile(reference, deCl);
       }
 
@@ -307,8 +311,21 @@ public class JavaLanguage
         raw.put("full", simple.compile(reference, deCl));
       }
       raw.put("base", simple.getBase());
-      if (type.isGeneric()) {
+      if (simple.isGeneric()) {
         raw.put("generic", true);
+      }
+
+      if (simple.isWildcard()) {
+        raw.put("wildcard", true);
+      }
+
+      if (simple.isPrimitive()) {
+        raw.put("primitive", true);
+      }
+
+      if (simple.isArray()) {
+        raw.put("array", true);
+        raw.put("array_depth", simple.getArrayDepth());
       }
 
       if (simple.hasSubTypes()) {
@@ -332,7 +349,19 @@ public class JavaLanguage
         raw.put("full", union.compile(reference, deCl));
       }
       raw.put("base", union.getBase());
-      raw.put("generic", union.isGeneric());
+
+      if (union.isGeneric()) {
+        raw.put("generic", true);
+      }
+
+      if (union.isWildcard()) {
+        raw.put("wildcard", true);
+      }
+
+      if (union.isPrimitive()) {
+        raw.put("primitive", true);
+      }
+
       TypeReference[] trBounds = union.getBounds();
       if (trBounds != null) {
         raw.put("bounds_type", union.isExtendsOrSuper() ? "extends" : "super");

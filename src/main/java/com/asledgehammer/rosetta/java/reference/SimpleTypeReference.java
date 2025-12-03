@@ -17,10 +17,27 @@ public class SimpleTypeReference extends TypeReference {
   private final boolean wildcard;
   private final boolean primitive;
   private final boolean generic;
+  private final boolean array;
+  private final int arrayDepth;
   private final TypeReference[] bounds;
 
-  SimpleTypeReference(String raw) {
+  SimpleTypeReference(@NotNull String raw) {
     raw = raw.trim();
+
+    // If the type is an array, parse out the syntax and calculate its depth.
+    if (raw.endsWith("[]")) {
+      this.array = true;
+      int arrayDepth = 0;
+      while (raw.endsWith("[]")) {
+        arrayDepth++;
+        raw = raw.substring(0, raw.length() - 2);
+      }
+      this.arrayDepth = arrayDepth;
+    } else {
+      this.array = false;
+      this.arrayDepth = 0;
+    }
+
     final int firstIndexOfExtends = raw.indexOf(" extends ");
     final int firstIndexOfSuper = raw.indexOf(" super ");
     final int firstIndexOfSubTypes = raw.indexOf("<");
@@ -113,6 +130,14 @@ public class SimpleTypeReference extends TypeReference {
   @Override
   public boolean isGeneric() {
     return generic;
+  }
+
+  public boolean isArray() {
+    return array;
+  }
+
+  public int getArrayDepth() {
+    return arrayDepth;
   }
 
   @NotNull
