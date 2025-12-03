@@ -3,7 +3,6 @@ package com.asledgehammer.rosetta.java;
 import com.asledgehammer.rosetta.Notable;
 import com.asledgehammer.rosetta.RosettaObject;
 import com.asledgehammer.rosetta.exception.MissingKeyException;
-import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
 import java.lang.reflect.Type;
@@ -30,27 +29,18 @@ public class JavaReturn extends RosettaObject implements Notable {
   }
 
   protected void onLoad(@NotNull Map<String, Object> raw) {
+
+    final String label = "parameter";
+
     // Resolve the type.
-    if (!raw.containsKey("type")) {
-      throw new MissingKeyException("return[\"type\"]", "type");
-    }
-    this.type = JavaLanguage.resolveType(raw.get("type"));
+    final Object oType = getExpectedValue(raw, label, "type", Map.class, String.class);
+    this.type = JavaLanguage.resolveType(oType);
 
     // If defined, set the nullable flag.
-    if (raw.containsKey("nullable")) {
-      Object oNullable = raw.get("nullable");
-      if (!(oNullable instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "nullable", oNullable.getClass(), Boolean.class);
-      }
-      this.nullable = (boolean) (Boolean) oNullable;
-    } else {
-      this.nullable = !type.isPrimitive();
-    }
+    this.nullable = getOptionalValue(raw, label, "nullable", !type.isPrimitive(), Boolean.class);
 
     // Load notes. (If present)
-    if (raw.containsKey("notes")) {
-      this.notes = raw.get("notes").toString();
-    }
+    this.notes = getOptionalValue(raw, label, "notes", String.class);
   }
 
   @NotNull

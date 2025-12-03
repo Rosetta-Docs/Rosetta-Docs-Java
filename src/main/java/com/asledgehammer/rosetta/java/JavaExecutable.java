@@ -3,7 +3,6 @@ package com.asledgehammer.rosetta.java;
 import com.asledgehammer.rosetta.NamedEntity;
 import com.asledgehammer.rosetta.Notable;
 import com.asledgehammer.rosetta.RosettaObject;
-import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
 import java.lang.reflect.*;
@@ -77,38 +76,25 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     this.signature = createSignature(this);
   }
 
-  @SuppressWarnings({"unchecked"})
   protected void onLoad(@NotNull Map<String, Object> raw) {
+
+    final String label = name;
+
     // Load parameters. (If present)
-    if (raw.containsKey("parameters")) {
-      Object oParameters = raw.get("parameters");
-      if (!(oParameters instanceof List)) {
-        throw new ValueTypeException(name, "parameters", oParameters.getClass(), List.class);
-      }
-      List<Object> objects = (List<Object>) oParameters;
-      for (int i = 0; i < objects.size(); i++) {
-        Object oParameter = objects.get(i);
-        if (!(oParameter instanceof Map)) {
-          throw new ValueTypeException(
-              name, "parameters[" + i + "]", oParameter.getClass(), Map.class);
-        }
-        parameters.add(new JavaParameter((Map<String, Object>) oParameter));
+    List<Map<String, Object>> oParameters = getOptionalDictionaryList(raw, label, "parameters");
+    if (oParameters != null) {
+      for (Map<String, Object> oParameter : oParameters) {
+        parameters.add(new JavaParameter(oParameter));
       }
     }
 
-    // Load scope. (If defined; DEFAULT: "package")
-    if (raw.containsKey("scope")) {
-      Object oScope = raw.get("scope");
-      if (!(oScope instanceof String)) {
-        throw new ValueTypeException(name, "scope", oScope.getClass(), String.class);
-      }
-      this.scope = JavaScope.of((String) oScope);
-    } else {
-      this.scope = JavaScope.PACKAGE;
-    }
+    // Load scope. (If defined. DEFAULT: "package")
+    String oScope = getOptionalValue(raw, label, "scope", JavaScope.PACKAGE.getID(), String.class);
+    this.scope = JavaScope.of(oScope);
 
-    if (raw.containsKey("deprecated")) {
-      Object oDeprecated = raw.get("deprecated");
+    // Load deprecated. (If defined)
+    Object oDeprecated = getOptionalValue(raw, label, "deprecated", String.class, boolean.class);
+    if (oDeprecated != null) {
       if (oDeprecated instanceof String) {
         this.deprecated = (String) oDeprecated;
       } else if (oDeprecated instanceof Boolean) {
@@ -117,9 +103,7 @@ public abstract class JavaExecutable<E extends Executable> extends RosettaObject
     }
 
     // Load notes. (If present)
-    if (raw.containsKey("notes")) {
-      this.notes = raw.get("notes").toString();
-    }
+    this.notes = getOptionalValue(raw, label, "notes", String.class);
   }
 
   @NotNull

@@ -4,8 +4,6 @@ import com.asledgehammer.rosetta.NamedEntity;
 import com.asledgehammer.rosetta.Notable;
 import com.asledgehammer.rosetta.RosettaObject;
 import com.asledgehammer.rosetta.Taggable;
-import com.asledgehammer.rosetta.exception.MissingKeyException;
-import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
 import java.lang.reflect.Field;
@@ -62,90 +60,24 @@ public class JavaField extends RosettaObject
   }
 
   protected void onLoad(@NotNull Map<String, Object> raw) {
-    if (!raw.containsKey("type")) {
-      throw new MissingKeyException(name, "type");
-    }
-    this.type = JavaLanguage.resolveType(raw.get("type"));
 
-    // Process the scope enum.
-    if (!raw.containsKey("scope")) {
-      throw new MissingKeyException("fields[\"" + name + "\"]", "scope");
-    }
-    Object oScope = raw.get("scope");
-    if (!(oScope instanceof String)) {
-      throw new ValueTypeException(
-          "fields[\"" + name + "\"]", "scope", oScope.getClass(), String.class);
-    }
+    final String label = "fields[\"" + name + "\"]";
 
-    this.scope = JavaScope.of((String) oScope);
+    // Load the type.
+    Object oType = getExpectedValue(raw, label, "type", Map.class, String.class);
+    this.type = JavaLanguage.resolveType(oType);
 
-    Object oFlag;
+    // Load the scope. (If defined. Default is 'package')
+    final String sScope = getOptionalValue(raw, label, "scope", "package", String.class);
+    this.scope = JavaScope.of(sScope);
 
-    // If defined, set the nullable flag.
-    if (raw.containsKey("nullable")) {
-      oFlag = raw.get("nullable");
-      if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "nullable", oFlag.getClass(), Boolean.class);
-      }
-      this.isNullable = (boolean) (Boolean) oFlag;
-    } else {
-      this.isNullable = !type.isPrimitive();
-    }
-
-    // If defined, set the volatile flag.
-    if (raw.containsKey("volatile")) {
-      oFlag = raw.get("volatile");
-      if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "volatile", oFlag.getClass(), Boolean.class);
-      }
-      this.isVolatile = (boolean) (Boolean) oFlag;
-    } else {
-      this.isVolatile = false;
-    }
-
-    // If defined, set the transient flag.
-    if (raw.containsKey("transient")) {
-      oFlag = raw.get("transient");
-      if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "transient", oFlag.getClass(), Boolean.class);
-      }
-      this.isTransient = (boolean) (Boolean) oFlag;
-    } else {
-      this.isTransient = false;
-    }
-
-    // If defined, set the static flag.
-    if (raw.containsKey("static")) {
-      oFlag = raw.get("static");
-      if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "static", oFlag.getClass(), Boolean.class);
-      }
-      this.isStatic = (boolean) (Boolean) oFlag;
-    } else {
-      this.isStatic = false;
-    }
-
-    // If defined, set the native flag.
-    if (raw.containsKey("native")) {
-      oFlag = raw.get("native");
-      if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "native", oFlag.getClass(), Boolean.class);
-      }
-      this.isNative = (boolean) (Boolean) oFlag;
-    } else {
-      this.isNative = false;
-    }
-
-    // If defined, set the final flag.
-    if (raw.containsKey("final")) {
-      oFlag = raw.get("final");
-      if (!(oFlag instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "final", oFlag.getClass(), Boolean.class);
-      }
-      this.isFinal = (boolean) (Boolean) oFlag;
-    } else {
-      this.isFinal = false;
-    }
+    // Boolean modifiers. (If defined)
+    this.isNullable = getOptionalValue(raw, label, "nullable", !type.isPrimitive(), boolean.class);
+    this.isVolatile = getOptionalValue(raw, label, "volatile", false, boolean.class);
+    this.isTransient = getOptionalValue(raw, label, "transient", false, boolean.class);
+    this.isStatic = getOptionalValue(raw, label, "static", false, boolean.class);
+    this.isNative = getOptionalValue(raw, label, "native", false, boolean.class);
+    this.isFinal = getOptionalValue(raw, label, "final", false, boolean.class);
   }
 
   @NotNull

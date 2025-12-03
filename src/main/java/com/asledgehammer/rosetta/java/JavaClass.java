@@ -5,8 +5,6 @@ import com.asledgehammer.rosetta.Notable;
 import com.asledgehammer.rosetta.RosettaObject;
 import com.asledgehammer.rosetta.Taggable;
 import com.asledgehammer.rosetta.exception.ClassAlreadyDiscoveredException;
-import com.asledgehammer.rosetta.exception.MissingKeyException;
-import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
 import java.lang.reflect.*;
@@ -21,7 +19,7 @@ public class JavaClass extends RosettaObject
   private final Map<String, JavaField> fields = new HashMap<>();
   private final Map<String, JavaExecutableCollection<JavaMethod>> methods = new HashMap<>();
   private final List<JavaTypeParameter> typeParameters = new ArrayList<>();
-  private final List<String> tags = new ArrayList<>();
+  private List<String> tags = new ArrayList<>();
   private final JavaExecutableCollection<JavaConstructor> constructors;
   private ClassReference targetReference;
   private Class<?> target;
@@ -32,11 +30,12 @@ public class JavaClass extends RosettaObject
   private String deprecated;
 
   @Nullable private TypeReference extendz;
-  private final List<TypeReference> implementz = new ArrayList<>();
+  @Nullable private List<TypeReference> implementz;
 
   private JavaScope scope;
   private boolean isStatic;
   private boolean isFinal;
+  private boolean isAbstract;
 
   private boolean isDiscovered = false;
 
@@ -50,8 +49,8 @@ public class JavaClass extends RosettaObject
 
   JavaClass(
       @NotNull JavaPackage pkg,
-      @NotNull String name,
       @NotNull JavaDeserializeInstance deserialize,
+      @NotNull String name,
       @NotNull Map<String, Object> raw) {
     super();
 
@@ -107,8 +106,12 @@ public class JavaClass extends RosettaObject
     }
 
     // Grab any superinterface types.
-    for (Type implement : clazz.getGenericInterfaces()) {
-      implementz.add(TypeReference.of(implement));
+    final Type[] clazzSuperInterfaces = clazz.getGenericInterfaces();
+    if (clazzSuperInterfaces.length != 0) {
+      implementz = new ArrayList<>();
+      for (Type implement : clazz.getGenericInterfaces()) {
+        implementz.add(TypeReference.of(implement));
+      }
     }
 
     // Discover fields.
@@ -144,8 +147,7 @@ public class JavaClass extends RosettaObject
 
   private void discoverFields(@NotNull Class<?> clazz) {
     for (Field field : clazz.getDeclaredFields()) {
-      JavaField javaField = new JavaField(field);
-      fields.put(javaField.getName(), javaField);
+      fields.put(field.getName(), new JavaField(field));
     }
   }
 
@@ -169,175 +171,97 @@ public class JavaClass extends RosettaObject
   protected void onLoad(
       @NotNull JavaDeserializeInstance deserialize, @NotNull final Map<String, Object> raw) {
 
-    // Load scope. (If defined; DEFAULT: "package")
-    if (raw.containsKey("scope")) {
-      Object oScope = raw.get("scope");
-      if (!(oScope instanceof String)) {
-        throw new ValueTypeException(name, "scope", oScope.getClass(), String.class);
-      }
-      this.scope = JavaScope.of((String) oScope);
-    } else {
-      this.scope = JavaScope.PACKAGE;
-    }
+    final String label = "class[\"" + name + "\"]";
 
-    // If the class is defined as static.
-    if (raw.containsKey("static")) {
-      Object oStatic = raw.get("static");
-      if (!(oStatic instanceof Boolean)) {
-        throw new ValueTypeException("class", "static", oStatic.getClass(), Boolean.class);
-      }
-      this.isStatic = (boolean) (Boolean) oStatic;
-    } else {
-      this.isStatic = false;
-    }
+    // Load notes. (If defined)
+    this.notes = getOptionalValue(raw, label, "notes", String.class);
 
-    // If the class is defined as final.
-    if (raw.containsKey("final")) {
-      Object oFinal = raw.get("final");
-      if (!(oFinal instanceof Boolean)) {
-        throw new ValueTypeException("class", "final", oFinal.getClass(), Boolean.class);
-      }
-      this.isFinal = (boolean) (Boolean) oFinal;
-    } else {
-      this.isFinal = false;
-    }
+    // Load tags. (If defined)
+    this.tags = getOptionalStringList(raw, label, "tags");
 
-    // If the class extends another, resolve the type.
-    if (raw.containsKey("extends")) {
-      // TODO: Implement Deserialize instance.
-      this.extendz = JavaLanguage.resolveType(raw.get("extends"));
-    }
+    // Load the scope. (If defined. DEFAULT: "package")
+    final String sScope = getOptionalValue(raw, label, "scope", "package", String.class);
+    this.scope = JavaScope.of(sScope);
 
-    // Any implementation types are resolved.
-    if (raw.containsKey("implements")) {
-      // TODO: Implement Deserialize instance.
-      Object oImplements = raw.get("implements");
-      if (!(oImplements instanceof List)) {
-        throw new ValueTypeException("class", "implements", oImplements.getClass(), List.class);
-      }
-      for (Object oImplement : (List<Object>) oImplements) {
+    // Boolean modifiers. (If defined)
+    this.isAbstract = getOptionalValue(raw, label, "abstract", false, boolean.class);
+    this.isStatic = getOptionalValue(raw, label, "static", false, boolean.class);
+    this.isFinal = getOptionalValue(raw, label, "final", false, boolean.class);
+
+    // Load the super-class type. (If defined)
+    String oExtends = getOptionalValue(raw, label, "extends", String.class);
+    // TODO: Implement Deserialize instance.
+    this.extendz = oExtends != null ? JavaLanguage.resolveType(oExtends) : null;
+
+    // Load any super-interface types. (If defined)
+    List<?> list = getOptionalList(raw, label, "implements", Map.class, String.class);
+    if (list != null) {
+      for (Object oImplement : list) {
+        // TODO: Implement Deserialize instance.
         implementz.add(JavaLanguage.resolveType(oImplement));
       }
     }
 
-    // If the object is deprecated and optionally has a description for it.
-    if (raw.containsKey("deprecated")) {
-      Object oDeprecated = raw.get("deprecated");
-      String deprecated;
+    // Load deprecated. (If defined)
+    Object oDeprecated = getOptionalValue(raw, label, "deprecated", String.class, boolean.class);
+    if (oDeprecated != null) {
       if (oDeprecated instanceof String) {
-        deprecated = (String) oDeprecated;
+        this.deprecated = (String) oDeprecated;
       } else if (oDeprecated instanceof Boolean) {
-        deprecated = (boolean) (Boolean) oDeprecated ? "" : null;
-      } else {
-        throw new ValueTypeException(
-            "class", "deprecated", oDeprecated.getClass(), String.class, Boolean.class);
-      }
-      this.deprecated = deprecated;
-    }
-
-    // Load notes. (If defined)
-    if (raw.containsKey("notes")) {
-      Object oNotes = raw.get("notes");
-      if (!(oNotes instanceof String)) {
-        throw new ValueTypeException("class", "notes", oNotes.getClass(), String.class);
+        this.deprecated = (boolean) oDeprecated ? "" : null;
       }
     }
 
     // Load any type_parameters. (If defined)
-    if (raw.containsKey("type_parameters")) {
-      Object oTypeParameters = raw.get("type_parameters");
-      if (!(oTypeParameters instanceof List)) {
-        throw new ValueTypeException(
-            "class", "type_parameters", oTypeParameters.getClass(), List.class);
-      }
-
-      for (Object oTypeParameter : (List<Object>) oTypeParameters) {
+    final List<Map<String, Object>> listTypeParameters =
+        getOptionalDictionaryList(raw, label, "type_parameters");
+    if (listTypeParameters != null && !listTypeParameters.isEmpty()) {
+      for (final Map<String, Object> oTypeParameter : listTypeParameters) {
         // TODO: Implement Deserialize instance.
-        JavaTypeParameter javaTypeParameter =
+        final JavaTypeParameter javaTypeParameter =
             new JavaTypeParameter(JavaLanguage.resolveType(oTypeParameter));
         this.typeParameters.add(javaTypeParameter);
       }
     }
 
-    // Load any sub-classes. (If defined)
-    if (raw.containsKey("classes")) {
-      Object oClasses = raw.get("classes");
-      if (!(oClasses instanceof Map)) {
-        throw new ValueTypeException("class", "classes", oClasses.getClass(), Map.class);
-      }
-      Map<String, Object> classes = (Map<String, Object>) oClasses;
-      for (String key : classes.keySet()) {
-        Object oClass = classes.get(key);
-        if (!(oClass instanceof Map)) {
-          throw new ValueTypeException("class.classes", key, oClass.getClass(), Map.class);
-        }
-        this.classes.put(
-            key, new JavaClass(this.pkg, key, deserialize, (Map<String, Object>) oClass));
+    // Load classes. (If any)
+    final Map<String, Object> classes = getOptionalDictionary(raw, label, "classes");
+    if (classes != null && !classes.isEmpty()) {
+      for (final String key : classes.keySet()) {
+        final String labelClass = label + "classes[\"" + key + "\"]";
+        final Map<String, Object> classRaw = getExpectedDictionary(classes, labelClass, key);
+        this.classes.put(key, new JavaClass(this.pkg, deserialize, key, classRaw));
       }
     }
 
     // Load any fields. (If defined)
-    if (raw.containsKey("fields")) {
-      Object oFields = raw.get("fields");
-      if (!(oFields instanceof Map)) {
-        throw new ValueTypeException("class", "fields", oFields.getClass(), Map.class);
-      }
-      Map<String, Object> fields = (Map<String, Object>) oFields;
-      //      List<String> keys = new ArrayList<>(fields.keySet());
-      //      keys.sort(Comparator.naturalOrder());
-
-      for (String key : fields.keySet()) {
-        Object oField = fields.get(key);
-        if (!(oField instanceof Map)) {
-          throw new ValueTypeException("class.fields", key, oField.getClass(), Map.class);
-        }
-        fields.put(key, new JavaField(key, (Map<String, Object>) oField));
+    final Map<String, Object> oFields = getOptionalDictionary(raw, label, "fields");
+    if (oFields != null && !oFields.isEmpty()) {
+      for (String key : oFields.keySet()) {
+        final String labelField = label + ".fields[\"" + key + "\"]";
+        oFields.put(key, new JavaField(key, getExpectedDictionary(oFields, labelField, key)));
       }
     }
 
     // Load any constructors. (If defined)
-    if (raw.containsKey("constructors")) {
-      Object oConstructors = raw.get("constructors");
-      if (!(oConstructors instanceof List)) {
-        throw new ValueTypeException("class", "constructors", oConstructors.getClass(), List.class);
-      }
-      List<Object> objects = (List<Object>) oConstructors;
-      for (int i = 0; i < objects.size(); i++) {
-        Object oConstructor = objects.get(i);
-        if (!(oConstructor instanceof Map)) {
-          throw new ValueTypeException(
-              "class", "constructors[" + i + "]", oConstructor.getClass(), Map.class);
-        }
-        constructors.addExecutable(
-            new JavaConstructor(this.name, (Map<String, Object>) oConstructor));
+    final List<Map<String, Object>> oConstructors =
+        getOptionalDictionaryList(raw, label, "constructors");
+    if (oConstructors != null && !oConstructors.isEmpty()) {
+      for (Map<String, Object> oConstructor : oConstructors) {
+        constructors.addExecutable(new JavaConstructor(this.name, oConstructor));
       }
     }
 
     // Load any methods. (If defined)
-    if (raw.containsKey("methods")) {
-      Object oMethods = raw.get("methods");
-      if (!(oMethods instanceof List)) {
-        throw new ValueTypeException("class", "methods", oMethods.getClass(), List.class);
-      }
-      List<Object> objects = (List<Object>) oMethods;
-      for (int i = 0; i < objects.size(); i++) {
-        Object oMethod = objects.get(i);
-        if (!(oMethod instanceof Map)) {
-          throw new ValueTypeException(
-              "class", "methods[" + i + "]", oMethod.getClass(), Map.class);
-        }
-        Map<String, Object> method = (Map<String, Object>) oMethod;
-        if (!method.containsKey("name")) {
-          throw new MissingKeyException("class.methods[" + i + "]", "name");
-        }
-        Object oName = method.get("name");
-        if (!(oName instanceof String methodName)) {
-          throw new ValueTypeException(
-              "class.methods[" + i + "]", "name", oName.getClass(), String.class);
-        }
-        JavaExecutableCollection<JavaMethod> methods =
-            this.methods.computeIfAbsent(methodName, JavaExecutableCollection::new);
-        methods.addExecutable(new JavaMethod(methodName, raw));
+    final List<Map<String, Object>> oMethods = getOptionalDictionaryList(raw, label, "methods");
+    if (oMethods != null) {
+      for (int i = 0; i < oMethods.size(); i++) {
+        final Map<String, Object> oMethod = oMethods.get(i);
+        final String labelMethod = label + ".methods[\"" + i + "\"]";
+        final String name = getExpectedValue(oMethod, labelMethod, "name", String.class);
+        final JavaExecutableCollection<JavaMethod> methods =
+            this.methods.computeIfAbsent(name, JavaExecutableCollection::new);
+        methods.addExecutable(new JavaMethod(name, raw));
       }
     }
   }

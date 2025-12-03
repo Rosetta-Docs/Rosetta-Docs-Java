@@ -3,8 +3,6 @@ package com.asledgehammer.rosetta.java;
 import com.asledgehammer.rosetta.NamedEntity;
 import com.asledgehammer.rosetta.Notable;
 import com.asledgehammer.rosetta.RosettaObject;
-import com.asledgehammer.rosetta.exception.MissingKeyException;
-import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import com.asledgehammer.rosetta.java.reference.TypeReference;
 import java.lang.reflect.Parameter;
@@ -46,38 +44,18 @@ public class JavaParameter extends RosettaObject
 
   protected void onLoad(@NotNull Map<String, Object> raw) {
 
-    // Read the name.
-    Object oName = raw.get("name");
-    if (oName == null) {
-      throw new MissingKeyException("field", "name");
-    } else if (!(oName instanceof String)) {
-      throw new ValueTypeException("field", "name", oName.getClass(), String.class);
-    }
-    this.name = (String) oName;
+    // Grab the name.
+    this.name = getExpectedValue(raw, "field", "name", String.class);
+    final String label = "fields[\"" + name + "\"]";
 
     // Resolve the type.
-    if (!raw.containsKey("type")) {
-      throw new MissingKeyException(name, "type");
-    }
-    this.type = JavaLanguage.resolveType(raw.get("type"));
+    final Object oType = getExpectedValue(raw, label, "type", Map.class, String.class);
+    this.type = JavaLanguage.resolveType(oType);
 
-    // If defined, set the nullable flag.
-    if (raw.containsKey("nullable")) {
-      Object oNullable = raw.get("nullable");
-      if (!(oNullable instanceof Boolean)) {
-        throw new ValueTypeException("parameter", "nullable", oNullable.getClass(), Boolean.class);
-      }
-      this.nullable = (boolean) (Boolean) oNullable;
-    } else {
-      this.nullable = !type.isPrimitive();
-    }
+    this.nullable = getOptionalValue(raw, label, "nullable", !type.isPrimitive(), boolean.class);
 
     // Load notes. (If present)
-    if (raw.containsKey("notes")) {
-      this.notes = raw.get("notes").toString();
-    }
-
-    // TODO: Load attributes / conditions?
+    this.notes = getOptionalValue(raw, label, "notes", String.class);
   }
 
   @NotNull

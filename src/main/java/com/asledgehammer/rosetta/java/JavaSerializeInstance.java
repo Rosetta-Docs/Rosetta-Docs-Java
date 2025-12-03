@@ -16,6 +16,10 @@ public class JavaSerializeInstance {
     }
   }
 
+  public boolean shouldNextPackages() {
+    return settings.shouldNestPackages();
+  }
+
   @NotNull
   public JavaTypeDictionary getTypeDictionary() {
     if (!hasTypeDictionary()) {

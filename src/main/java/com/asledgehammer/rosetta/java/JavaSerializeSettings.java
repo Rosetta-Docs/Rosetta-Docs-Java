@@ -15,6 +15,8 @@ public class JavaSerializeSettings implements RosettaSerializeSettings {
 
   private boolean writeFullType = false;
 
+  private boolean nestPackages = false;
+
   public boolean isWriteFullType() {
     return writeFullType;
   }
@@ -46,6 +48,17 @@ public class JavaSerializeSettings implements RosettaSerializeSettings {
   public JavaSerializeSettings setRenderTypesAsDictionary(boolean flag) {
     checkReadOnlyStatus();
     this.renderTypesAsDictionary = flag;
+    return this;
+  }
+
+  public boolean shouldNestPackages() {
+    return nestPackages;
+  }
+
+  @NotNull
+  public JavaSerializeSettings setNestPackages(boolean flag) {
+    checkReadOnlyStatus();
+    this.nestPackages = flag;
     return this;
   }
 

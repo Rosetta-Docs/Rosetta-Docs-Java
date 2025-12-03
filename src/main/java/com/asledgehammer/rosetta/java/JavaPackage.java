@@ -82,6 +82,7 @@ public class JavaPackage extends RosettaObject
   JavaPackage(
       @NotNull JavaLanguage lang,
       @Nullable JavaPackage parent,
+      @NotNull JavaDeserializeInstance deserialize,
       @NotNull String name,
       @NotNull Map<String, Object> raw) {
     super();
@@ -99,17 +100,46 @@ public class JavaPackage extends RosettaObject
     // Attempt to resolve reflection before loading.
     this.target = resolve(this.path);
 
-    onLoad(raw);
+    onLoad(deserialize, raw);
   }
 
-  protected void onLoad(@NotNull Map<String, Object> raw) {
-    // TODO: Load classes.
-    // TODO: Load sub-packages.
+  protected void onLoad(@NotNull JavaDeserializeInstance deserialize, @NotNull Map<String, Object> raw) {
+
+    final String label = this.name;
+
+    // Load sub-packages. (If any)
+    final Map<String, Object> packages = getOptionalDictionary(raw, label, "packages");
+    if (packages != null && !packages.isEmpty()) {
+      for (final String key : packages.keySet()) {
+        final Map<String, Object> packageRaw =
+            getExpectedDictionary(packages, label + "packages[\"" + key + "\"]", key);
+        this.packages.put(key, new JavaPackage(language, this, deserialize, key, packageRaw));
+      }
+    }
+
+    // Load classes. (If any)
+    final Map<String, Object> classes = getOptionalDictionary(raw, label, "classes");
+    if (classes != null && !classes.isEmpty()) {
+      for (final String key : classes.keySet()) {
+        final Map<String, Object> classRaw =
+            getExpectedDictionary(classes, label + "classes[\"" + key + "\"]", key);
+        this.classes.put(key, new JavaClass(this, deserialize, key, classRaw));
+      }
+    }
+
+    // Load notes. (if any)
+    this.notes = getOptionalValue(raw, label, "notes", String.class);
+
+    // Load tags. (If any)
+    final List<String> tags = getOptionalStringList(raw, label, "tags");
+    if (tags != null) {
+      this.tags.addAll(tags);
+    }
   }
 
   @NotNull
   protected Map<String, Object> onSave(boolean deep, @NotNull JavaSerializeInstance serialize) {
-    final Map<String, Object> raw = new HashMap<>();
+    final Map<String, Object> raw = new TreeMap<>();
 
     if (hasNotes()) {
       raw.put("notes", getNotes());
@@ -119,6 +149,7 @@ public class JavaPackage extends RosettaObject
       raw.put("tags", getTags());
     }
 
+    // Save sub-packages. (If any & deeply storing)
     if (deep && hasPackages()) {
       final Map<String, Object> packages = new HashMap<>();
 

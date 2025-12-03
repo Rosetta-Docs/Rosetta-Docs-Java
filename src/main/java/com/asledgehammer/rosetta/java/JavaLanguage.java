@@ -144,6 +144,8 @@ public class JavaLanguage
       @NotNull String id,
       @NotNull Map<String, Object> raw) {
 
+    final JavaDeserializeInstance deserialize = new JavaDeserializeInstance(settings);
+
     // No Java packages? Return.
     if (!raw.containsKey("packages")) return;
 
@@ -161,7 +163,8 @@ public class JavaLanguage
         throw new RosettaException(
             "The property \"languages.java.packages." + key + "\" is not a dictionary.");
       }
-      JavaPackage javaPackage = new JavaPackage(this, null, key, (Map<String, Object>) oPackage);
+      final JavaPackage javaPackage =
+          new JavaPackage(this, null, deserialize, key, (Map<String, Object>) oPackage);
       packages.put(javaPackage.getName(), javaPackage);
     }
   }

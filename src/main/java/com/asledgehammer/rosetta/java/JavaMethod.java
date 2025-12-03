@@ -1,7 +1,6 @@
 package com.asledgehammer.rosetta.java;
 
 import com.asledgehammer.rosetta.Taggable;
-import com.asledgehammer.rosetta.exception.ValueTypeException;
 import com.asledgehammer.rosetta.java.reference.ClassReference;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -32,16 +31,21 @@ public class JavaMethod extends JavaExecutable<Method> implements Taggable {
     // Load all general executable data.
     super.onLoad(raw);
 
-    // If return data is present, process it.
-    if (raw.containsKey("return")) {
-      Object oReturns = raw.get("return");
-      if (!(oReturns instanceof Map)) {
-        throw new ValueTypeException(name, "return", oReturns.getClass(), Map.class);
-      }
-      this.returns = new JavaReturn((Map<String, Object>) oReturns);
+    final String label = this.name;
+
+    // Load return data. (If present)
+    Map<String, Object> oReturns = getOptionalDictionary(raw, label, "return");
+    if (oReturns != null) {
+      this.returns = new JavaReturn(oReturns);
     } else {
       // Null definitions are void.
       this.returns = new JavaReturn(void.class);
+    }
+
+    // Load tags. (If any)
+    List<String> tags = getOptionalStringList(raw, label, "tags");
+    if (tags != null) {
+      this.tags.addAll(tags);
     }
   }
 
