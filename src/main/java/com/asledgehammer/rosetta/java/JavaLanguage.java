@@ -218,9 +218,9 @@ public class JavaLanguage
 
     // If using a type-dictionary, render it last to let registrations happen first.
     if (serialize.hasTypeDictionary()) {
-      Map<String, Object> types = new TreeMap<>();
-      serialize.getTypeDictionary().render(types);
-      raw.put("types", types);
+      final JavaTypeDictionary typeDictionary = serialize.getTypeDictionary();
+      raw.put("types", typeDictionary.render());
+      raw.put("types_format", settings.getTypeMode().getID());
     }
 
     return raw;

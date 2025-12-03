@@ -9,11 +9,19 @@ public class JavaSerializeInstance {
   private JavaTypeDictionary typeDictionary;
 
   JavaSerializeInstance(@NotNull JavaSerializeSettings settings, @NotNull String id) {
+
     this.id = id;
     this.settings = settings;
-    if (settings.isRenderTypesAsDictionary()) {
-      this.typeDictionary = new JavaTypeDictionary(id);
+
+    final TypeDictionaryMode typeMode = settings.getTypeMode();
+    if (typeMode != TypeDictionaryMode.NONE) {
+      this.typeDictionary = new JavaTypeDictionary(typeMode, id);
     }
+  }
+
+  @NotNull
+  public TypeDictionaryMode getTypeMode() {
+    return settings.getTypeMode();
   }
 
   public boolean shouldNextPackages() {

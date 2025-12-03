@@ -11,7 +11,7 @@ public class JavaSerializeSettings implements RosettaSerializeSettings {
   private FullTypeRenderSettings fullTypeRenderSettings =
       FullTypeRenderSettings.ONLY_WITH_MODIFIERS;
 
-  private boolean renderTypesAsDictionary = false;
+  private TypeDictionaryMode typeMode = TypeDictionaryMode.NONE;
 
   private boolean writeFullType = false;
 
@@ -40,17 +40,6 @@ public class JavaSerializeSettings implements RosettaSerializeSettings {
     return this;
   }
 
-  public boolean isRenderTypesAsDictionary() {
-    return renderTypesAsDictionary;
-  }
-
-  @NotNull
-  public JavaSerializeSettings setRenderTypesAsDictionary(boolean flag) {
-    checkReadOnlyStatus();
-    this.renderTypesAsDictionary = flag;
-    return this;
-  }
-
   public boolean shouldNestPackages() {
     return nestPackages;
   }
@@ -59,6 +48,17 @@ public class JavaSerializeSettings implements RosettaSerializeSettings {
   public JavaSerializeSettings setNestPackages(boolean flag) {
     checkReadOnlyStatus();
     this.nestPackages = flag;
+    return this;
+  }
+
+  public TypeDictionaryMode getTypeMode() {
+    return typeMode;
+  }
+
+  @NotNull
+  public JavaSerializeSettings setTypeMode(TypeDictionaryMode typeMode) {
+    checkReadOnlyStatus();
+    this.typeMode = typeMode;
     return this;
   }
 

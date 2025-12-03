@@ -10,11 +10,13 @@ public class JavaTypeDictionary {
   private final Map<Integer, Object> mapRendered = new HashMap<>();
   private final Map<String, Integer> mapReference = new HashMap<>();
   private final String id;
+  private final TypeDictionaryMode mode;
 
   /**
    * @param id The ID of the container file to reference.
    */
-  JavaTypeDictionary(@NotNull String id) {
+  JavaTypeDictionary(@NotNull TypeDictionaryMode mode, @NotNull String id) {
+    this.mode = mode;
     this.id = id;
   }
 
@@ -43,13 +45,21 @@ public class JavaTypeDictionary {
     return "$" + id + ":" + iKey;
   }
 
-  /**
-   * @param raw The map to store the dictionary.
-   */
-  public void render(@NotNull Map<String, Object> raw) {
-    List<Integer> keys = new ArrayList<>(mapRendered.keySet());
-    keys.sort(Integer::compare);
-    for (int key : keys) raw.put("" + key, mapRendered.get(key));
+  @NotNull
+  public Object render() {
+    if (mode == TypeDictionaryMode.DICTIONARY) {
+      Map<String, Object> raw = new TreeMap<>();
+      List<Integer> keys = new ArrayList<>(mapRendered.keySet());
+      keys.sort(Integer::compare);
+      for (int key : keys) raw.put("" + key, mapRendered.get(key));
+      return raw;
+    } else {
+      List<Object> raw = new ArrayList<>();
+      List<Integer> keys = new ArrayList<>(mapRendered.keySet());
+      keys.sort(Integer::compare);
+      for (int key : keys) raw.add(mapRendered.get(key));
+      return raw;
+    }
   }
 
   @NotNull
@@ -57,8 +67,13 @@ public class JavaTypeDictionary {
     return id;
   }
 
+  public TypeDictionaryMode getMode() {
+    return mode;
+  }
+
   public void clear() {
     mapReference.clear();
     mapRendered.clear();
   }
+
 }

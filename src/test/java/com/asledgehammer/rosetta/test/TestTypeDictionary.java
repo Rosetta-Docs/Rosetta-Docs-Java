@@ -22,7 +22,7 @@ public class TestTypeDictionary {
     collection.addLanguage(language);
 
     final JavaSerializeSettings javaSerializeSettings = new JavaSerializeSettings();
-    javaSerializeSettings.setRenderTypesAsDictionary(true);
+    javaSerializeSettings.setTypeMode(TypeDictionaryMode.LIST);
 
     String yaml =
         collection.save(
