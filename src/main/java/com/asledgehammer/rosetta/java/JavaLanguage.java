@@ -328,7 +328,9 @@ public class JavaLanguage
     } else {
       UnionTypeReference union = (UnionTypeReference) type;
       raw = new TreeMap<>();
-      raw.put("full", union.compile(reference, deCl));
+      if (serialize.isWriteFullType()) {
+        raw.put("full", union.compile(reference, deCl));
+      }
       raw.put("base", union.getBase());
       raw.put("generic", union.isGeneric());
       TypeReference[] trBounds = union.getBounds();
